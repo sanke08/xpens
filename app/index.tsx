@@ -1,4 +1,4 @@
-import { COLORS } from '@/lib/colors';
+import { COLORS } from "@/lib/colors";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import React, { useMemo } from "react";
@@ -64,7 +64,7 @@ export default function HomeScreen() {
           onPress={() => router.push("/transaction" as any)}
         >
           <View style={styles.quickAddContent}>
-            <Plus size={24} color=COLORS.background />
+            <Plus size={24} color={COLORS.background} />
             <Text style={styles.quickAddText}>Add Transaction</Text>
           </View>
         </TouchableOpacity>
