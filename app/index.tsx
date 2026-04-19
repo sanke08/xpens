@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   quickAddButton: {
     marginHorizontal: 16,
     marginTop: 24,
-    backgroundColor: COLORS.text,
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingVertical: 16,
     shadowColor: COLORS.shadow,

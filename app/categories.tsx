@@ -1,4 +1,4 @@
-import { COLORS } from '@/lib/colors';
+import { COLORS } from "@/lib/colors";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Plus } from "lucide-react-native";
 import React, { useState } from "react";
@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { getIcon } from "../lib/iconMap";
 import { useStore } from "../lib/store";
@@ -55,7 +55,11 @@ export default function CategoriesScreen() {
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
+                    {
+                      backgroundColor: isIncome
+                        ? COLORS.successBg
+                        : COLORS.active,
+                    },
                   ]}
                 >
                   <IconComponent
@@ -175,6 +179,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.background,
+    color: COLORS.text,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,

@@ -1,4 +1,4 @@
-import { COLORS } from '@/lib/colors';
+import { COLORS } from "@/lib/colors";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -38,7 +38,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
         <StatusBar style="light" />
         <Stack
           screenOptions={{
