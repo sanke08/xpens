@@ -1,3 +1,6 @@
+import { format, isToday, isYesterday } from "date-fns";
+import { useRouter } from "expo-router";
+import { ArrowLeft, Search } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   SectionList,
@@ -7,13 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { format, isToday, isYesterday } from "date-fns";
-import { ArrowLeft, Search } from "lucide-react-native";
 
-import { COLORS } from "../../../theme/colors";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { useStore } from "../../../store/useStore";
+import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
 
 /**

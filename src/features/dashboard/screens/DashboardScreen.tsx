@@ -79,9 +79,16 @@ export default function DashboardScreen() {
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity onPress={() => router.push("/transactions")}>
+            <Text style={styles.viewAllBtn}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Categories</Text>
           <TouchableOpacity onPress={() => router.push("/categories")}>
-            <Text style={styles.viewAllBtn}>Manage All</Text>
+            <Text style={styles.viewAllBtn}>Manage</Text>
           </TouchableOpacity>
         </View>
 
