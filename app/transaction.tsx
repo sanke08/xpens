@@ -296,6 +296,10 @@ export default function TransactionScreen() {
           onSelectCategory={(cat) => {
             setSelectedCategory(cat);
             setType(cat.type as "expense" | "income");
+            // Auto-complete the text
+            const numberMatch = inputText.match(/\d+(\.\d+)?/);
+            const amountStr = numberMatch ? numberMatch[0] : "";
+            setInputText(amountStr ? `${amountStr} ${cat.name.toLowerCase()}` : cat.name.toLowerCase());
           }} 
           onOpenCreateModal={(suggestedName) => {
             setNewCatName(suggestedName);
