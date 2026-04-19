@@ -18,6 +18,7 @@ import { getIcon, AVAILABLE_ICONS } from "../lib/iconMap";
 import { TransactionRow } from "../components/TransactionRow";
 import { parseSmartInput } from "../lib/smartInput";
 import { Category, useStore } from "../lib/store";
+import { keywordMap } from "../lib/categoryKeywords";
 
 export default function TransactionScreen() {
   const router = useRouter();
@@ -688,9 +689,17 @@ const AutoSuggestBlock = ({
 
   const words = noteContent.split(" ").filter(w => w.length > 1);
   const searchWord = words[0] || noteContent;
-
-  const matchedCats = categories.filter(c => c.name.toLowerCase().includes(searchWord));
+  let matchedCats = categories.filter(c => c.name.toLowerCase().includes(searchWord));
   const exactMatch = categories.find(c => c.name.toLowerCase() === searchWord);
+  const isKeywordMapped = keywordMap.has(searchWord);
+
+  if (isKeywordMapped) {
+    const mappedCatId = keywordMap.get(searchWord);
+    const resolvedCat = categories.find(c => c.id === mappedCatId);
+    if (resolvedCat && !matchedCats.find(c => c.id === mappedCatId)) {
+      matchedCats = [resolvedCat, ...matchedCats];
+    }
+  }
 
   return (
     <View style={styles.suggestContainer}>
@@ -704,7 +713,7 @@ const AutoSuggestBlock = ({
             <Text style={styles.catText}>{c.name}</Text>
           </TouchableOpacity>
         ))}
-        {!exactMatch && (
+        {!exactMatch && !isKeywordMapped && (
           <TouchableOpacity 
             style={[styles.catChip, { backgroundColor: COLORS.active, borderColor: COLORS.text, borderStyle: 'dashed' }]} 
             onPress={() => onOpenCreateModal(searchWord)}
