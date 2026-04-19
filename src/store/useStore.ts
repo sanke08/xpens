@@ -1,31 +1,8 @@
 import { create } from 'zustand';
-import { generateId } from './id';
-import { db } from './db';
-import { defaultCategories } from './categoryKeywords';
-
-// Types
-export interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  type: string;
-  createdAt: number;
-}
-
-export interface Transaction {
-  id: string;
-  amount: number;
-  type: 'income' | 'expense';
-  categoryId: string | null;
-  categoryName: string | null;
-  title: string | null;
-  note: string | null;
-  location: string | null;
-  withPerson: string | null;
-  date: number;
-  createdAt: number;
-  updatedAt: number;
-}
+import { generateId } from '../utils/id';
+import { dbService } from '../services/DatabaseService';
+import { defaultCategories } from '../features/categories/categoryKeywords';
+import { Category, Transaction } from '../types';
 
 interface AppState {
   categories: Category[];
@@ -47,6 +24,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadData: () => {
     try {
+      const db = dbService.getDb();
       const catsDb = db.getAllSync<Category>('SELECT * FROM categories ORDER BY createdAt ASC;');
       const txs = db.getAllSync<Transaction>('SELECT * FROM transactions ORDER BY date DESC;');
       
@@ -71,6 +49,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({ transactions: [tx, ...state.transactions] }));
     
     // Save to DB
+    const db = dbService.getDb();
     const stmt = db.prepareSync('INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.executeSync([
       tx.id, tx.amount, tx.type, tx.categoryId, tx.categoryName, tx.title, tx.note, tx.location, tx.withPerson, tx.date, tx.createdAt, tx.updatedAt
@@ -88,6 +67,7 @@ export const useStore = create<AppState>((set, get) => ({
     const tx = get().transactions.find(t => t.id === id);
     if (!tx) return;
 
+    const db = dbService.getDb();
     const stmt = db.prepareSync('UPDATE transactions SET amount=?, type=?, categoryId=?, categoryName=?, title=?, note=?, location=?, withPerson=?, date=?, updatedAt=? WHERE id=?');
     stmt.executeSync([
       tx.amount, tx.type, tx.categoryId, tx.categoryName, tx.title, tx.note, tx.location, tx.withPerson, tx.date, tx.updatedAt, tx.id
@@ -97,6 +77,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteTransaction: (id) => {
     set((state) => ({ transactions: state.transactions.filter((t) => t.id !== id) }));
+    const db = dbService.getDb();
     db.runSync('DELETE FROM transactions WHERE id = ?', id);
   },
 
@@ -107,6 +88,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     set((state) => ({ categories: [...state.categories, cat] }));
 
+    const db = dbService.getDb();
     const stmt = db.prepareSync('INSERT INTO categories (id, name, icon, type, createdAt) VALUES (?, ?, ?, ?, ?)');
     stmt.executeSync([cat.id, cat.name, cat.icon, cat.type, cat.createdAt]);
     stmt.finalizeSync();
@@ -120,6 +102,7 @@ export const useStore = create<AppState>((set, get) => ({
     const cat = get().categories.find(c => c.id === id);
     if (!cat) return;
 
+    const db = dbService.getDb();
     const stmt = db.prepareSync('UPDATE categories SET name=?, icon=?, type=? WHERE id=?');
     stmt.executeSync([cat.name, cat.icon, cat.type, cat.id]);
     stmt.finalizeSync();
@@ -127,6 +110,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteCategory: (id) => {
     set((state) => ({ categories: state.categories.filter((c) => c.id !== id) }));
+    const db = dbService.getDb();
     db.runSync('DELETE FROM categories WHERE id = ?', id);
   }
 }));

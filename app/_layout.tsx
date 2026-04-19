@@ -1,20 +1,20 @@
-import { COLORS } from "@/lib/colors";
+import { COLORS } from "../src/theme/colors";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { initDb } from "../lib/db";
-import { useStore } from "../lib/store";
+import { dbService } from "../src/services/DatabaseService";
+import { useStore } from "../src/store/useStore";
 
 export default function RootLayout() {
   const { isLoaded, loadData } = useStore();
 
   useEffect(() => {
-    // Initialize DB synchronously
+    // Initialize DB synchronously via our Singleton
     try {
-      initDb();
+      dbService.initDb();
       loadData();
     } catch (e) {
       console.error(e);

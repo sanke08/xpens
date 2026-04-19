@@ -1,4 +1,4 @@
-import { Category } from './store';
+import { Category } from '../../types';
 
 export const defaultCategories: Category[] = [
   { id: "food", name: "Food", icon: "pizza", type: "expense", createdAt: 0 },

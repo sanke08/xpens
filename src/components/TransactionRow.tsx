@@ -1,9 +1,10 @@
-import { COLORS } from '@/lib/colors';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { getIcon } from '../lib/iconMap';
-import { Transaction, Category } from '../lib/store';
 import { format } from 'date-fns';
+
+import { COLORS } from '../theme/colors';
+import { getIcon } from '../features/categories/iconMap';
+import { Transaction, Category } from '../types';
 
 interface TransactionRowProps {
   transaction: Transaction;
@@ -12,13 +13,23 @@ interface TransactionRowProps {
   variant?: 'default' | 'category';
 }
 
-export function TransactionRow({ transaction, category, onPress, variant = 'default' }: TransactionRowProps) {
+/**
+ * TransactionRow - Renders a single transaction list item.
+ * Supports different layout variants and displays amount, note, and time.
+ */
+export function TransactionRow({
+  transaction,
+  category,
+  onPress,
+  variant = 'default',
+}: TransactionRowProps) {
   const IconComponent = getIcon(category?.icon);
   const isIncome = transaction.type === 'income';
 
-  const primaryText = variant === 'category' 
-    ? (transaction.title || transaction.note || transaction.categoryName || 'Uncategorized')
-    : (transaction.categoryName || 'Uncategorized');
+  const primaryText =
+    variant === 'category'
+      ? transaction.title || transaction.note || transaction.categoryName || 'Uncategorized'
+      : transaction.categoryName || 'Uncategorized';
 
   let secondaryText = '';
   if (variant === 'category') {
@@ -36,13 +47,25 @@ export function TransactionRow({ transaction, category, onPress, variant = 'defa
   }
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7} disabled={!onPress}>
-      <View style={[styles.iconContainer, { backgroundColor: isIncome ? COLORS.successBg : COLORS.active }]}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={!onPress}
+    >
+      <View
+        style={[
+          styles.iconContainer,
+          { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
+        ]}
+      >
         <IconComponent size={20} color={isIncome ? COLORS.success : COLORS.text} />
       </View>
-      
+
       <View style={styles.content}>
-        <Text style={styles.categoryName} numberOfLines={1}>{primaryText}</Text>
+        <Text style={styles.categoryName} numberOfLines={1}>
+          {primaryText}
+        </Text>
         {secondaryText ? (
           <Text style={styles.note} numberOfLines={1}>
             {secondaryText}
@@ -65,7 +88,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -73,10 +96,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   content: {
     flex: 1,
@@ -84,25 +107,28 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 2,
   },
   note: {
     fontSize: 13,
     color: COLORS.muted,
+    fontWeight: '500',
   },
   rightContent: {
     alignItems: 'flex-end',
     justifyContent: 'center',
+    marginLeft: 8,
   },
   amount: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 2,
   },
   time: {
     fontSize: 12,
-    color: COLORS.gray,
-  }
+    color: COLORS.muted,
+    fontWeight: '600',
+  },
 });

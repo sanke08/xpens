@@ -1,5 +1,5 @@
-import { keywordMap, normalize } from "./categoryKeywords";
-import { Category, Transaction } from "./store";
+import { keywordMap, normalize } from "../features/categories/categoryKeywords";
+import { Category, Transaction } from "../types";
 
 export interface SmartInputResult {
   amount: number | null;

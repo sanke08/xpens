@@ -1,16 +1,17 @@
-import { COLORS } from "@/lib/colors";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Transaction } from "../lib/store";
+import { COLORS } from "../theme/colors";
+import { Transaction } from "../types";
 
 interface BalanceCardProps {
   transactions: Transaction[];
 }
 
+/**
+ * BalanceCard component displays the overall financial summary.
+ * It shows total balance, income, and expenses, along with today's net change.
+ */
 export function BalanceCard({ transactions }: BalanceCardProps) {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
   let totalIncome = 0;
   let totalExpense = 0;
   let todayBalance = 0;
@@ -66,11 +67,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   label: {
     fontSize: 16,
     color: COLORS.muted,
-    fontFamily: "System",
     fontWeight: "500",
     marginBottom: 4,
   },
@@ -78,9 +81,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: COLORS.text,
     fontWeight: "800",
-    fontFamily: "System",
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   row: {
     flexDirection: "row",
@@ -99,7 +101,6 @@ const styles = StyleSheet.create({
   subAmount: {
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "System",
   },
   todayBanner: {
     backgroundColor: COLORS.active,
