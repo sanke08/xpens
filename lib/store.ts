@@ -50,7 +50,10 @@ export const useStore = create<AppState>((set, get) => ({
       const catsDb = db.getAllSync<Category>('SELECT * FROM categories ORDER BY createdAt ASC;');
       const txs = db.getAllSync<Transaction>('SELECT * FROM transactions ORDER BY date DESC;');
       
-      const allCats = [...defaultCategories, ...catsDb];
+      const uniqueCats = new Map<string, Category>();
+      defaultCategories.forEach(c => uniqueCats.set(c.name.toLowerCase(), c));
+      catsDb.forEach(c => uniqueCats.set(c.name.toLowerCase(), c));
+      const allCats = Array.from(uniqueCats.values());
       
       set({ categories: allCats, transactions: txs, isLoaded: true });
     } catch (e) {
