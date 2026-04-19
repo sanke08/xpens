@@ -270,11 +270,9 @@ export default function TransactionScreen() {
           </View>
         )}
       </ScrollView>
-      <View style={{ paddingHorizontal: 24 }}>
-        <EGBlock inputText={inputText} categories={categories} />
-      </View>
 
       <View style={styles.footer}>
+        <EGBlock inputText={inputText} categories={categories} />
         <TouchableOpacity
           style={[
             styles.saveBtn,
@@ -447,11 +445,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   footer: {
-    padding: 24,
-    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.background,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
   },
   saveBtn: {
     paddingVertical: 18,
@@ -481,8 +476,10 @@ const EGBlock = ({
   const note = parsed.note || (isTyping ? "" : "pizza with john");
   const suggestedCat = parsed.suggestedCategory;
 
-  const categoryName = suggestedCat?.name || (isTyping ? "Uncategorized" : "Food");
-  const categoryIcon = suggestedCat?.icon || (isTyping ? "circle-dot" : "pizza");
+  const categoryName =
+    suggestedCat?.name || (isTyping ? "Uncategorized" : "Food");
+  const categoryIcon =
+    suggestedCat?.icon || (isTyping ? "circle-dot" : "pizza");
 
   return (
     <View style={styles.smartInputContainer}>
@@ -493,7 +490,9 @@ const EGBlock = ({
             Smart Input:{"  "}
           </Text>
           <Text style={{ fontStyle: "italic", color: COLORS.text }}>
-            {isTyping ? `Input : "${inputText}"` : `Example : "200 pizza with john"`}
+            {isTyping
+              ? `Input : "${inputText}"`
+              : `Example : "200 pizza with john"`}
           </Text>
         </Text>
       </View>
