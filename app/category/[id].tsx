@@ -61,7 +61,7 @@ export default function CategoryScreen() {
             style={styles.backBtn}
             onPress={() => router.back()}
           >
-            <ArrowLeft size={24} color=COLORS.text />
+            <ArrowLeft size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
         <View style={styles.emptyState}>
@@ -78,7 +78,7 @@ export default function CategoryScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color=COLORS.text />
+          <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{category.name}</Text>
       </View>

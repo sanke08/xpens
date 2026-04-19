@@ -31,7 +31,7 @@ export default function RootLayout() {
           alignItems: "center",
         }}
       >
-        <ActivityIndicator size="large" color=COLORS.text />
+        <ActivityIndicator size="large" color={COLORS.text} />
       </View>
     );
   }
@@ -39,7 +39,7 @@ export default function RootLayout() {
   return (
     <>
       <SafeAreaView style={{ flex: 1 }}>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,

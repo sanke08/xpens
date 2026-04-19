@@ -76,14 +76,14 @@ export default function TransactionsScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color=COLORS.text />
+          <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Transactions</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color=COLORS.muted />
+          <Search size={20} color={COLORS.muted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search transactions..."

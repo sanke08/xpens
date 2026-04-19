@@ -36,7 +36,7 @@ export default function CategoriesScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color=COLORS.text />
+          <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Categories</Text>
       </View>
@@ -96,7 +96,7 @@ export default function CategoriesScreen() {
               style={styles.addBtn}
               onPress={() => setIsAdding(true)}
             >
-              <Plus size={20} color=COLORS.text />
+              <Plus size={20} color={COLORS.text} />
               <Text style={styles.addBtnText}>New Category</Text>
             </TouchableOpacity>
           )}

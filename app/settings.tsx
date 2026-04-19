@@ -51,7 +51,7 @@ export default function SettingsScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color=COLORS.text />
+          <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
@@ -65,28 +65,28 @@ export default function SettingsScreen() {
             onPress={() => router.push("/categories" as any)}
           >
             <View style={styles.rowLeft}>
-              <Folder size={20} color=COLORS.text />
+              <Folder size={20} color={COLORS.text} />
               <Text style={styles.rowText}>Manage Categories</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.row} onPress={handleExport}>
             <View style={styles.rowLeft}>
-              <Download size={20} color=COLORS.text />
+              <Download size={20} color={COLORS.text} />
               <Text style={styles.rowText}>Export Data (JSON)</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.row}>
             <View style={styles.rowLeft}>
-              <Upload size={20} color=COLORS.text />
+              <Upload size={20} color={COLORS.text} />
               <Text style={styles.rowText}>Import Data</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.row} onPress={handleClearData}>
             <View style={styles.rowLeft}>
-              <Trash2 size={20} color=COLORS.danger />
+              <Trash2 size={20} color={COLORS.danger} />
               <Text style={[styles.rowText, { color: COLORS.danger }]}>
                 Clear All Data
               </Text>
@@ -99,7 +99,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity style={styles.row}>
             <View style={styles.rowLeft}>
-              <Shield size={20} color=COLORS.text />
+              <Shield size={20} color={COLORS.text} />
               <Text style={styles.rowText}>App Lock (Biometrics/PIN)</Text>
             </View>
             <Text style={styles.rowRightText}>Off</Text>
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
 
           {/* <TouchableOpacity style={styles.row}>
             <View style={styles.rowLeft}>
-              <Github size={20} color=COLORS.text />
+              <Github size={20} color={COLORS.text} />
               <Text style={styles.rowText}>Source Code</Text>
             </View>
           </TouchableOpacity> */}
