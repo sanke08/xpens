@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { TransactionRow } from "../components/TransactionRow";
 import { parseSmartInput } from "../lib/smartInput";
 import { Category, useStore } from "../lib/store";
 
@@ -160,13 +161,46 @@ export default function TransactionScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.smartInputTip}>
-          <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
-          <Text style={styles.tipText}>
-            <Text style={{ color: COLORS.text, fontWeight: "600" }}>Smart Input: </Text>
-            Try typing <Text style={{ fontStyle: "italic", color: COLORS.text }}>"200 pizza with john"</Text> to auto-fill details.
-          </Text>
+        <View style={styles.smartInputContainer}>
+          <View style={styles.smartInputTip}>
+            <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
+            <Text style={styles.tipText}>
+              <Text style={{ color: COLORS.text, fontWeight: "600" }}>
+                Smart Input:{" "}
+              </Text>
+              Try typing{" "}
+              <Text style={{ fontStyle: "italic", color: COLORS.text }}>
+                "200 pizza with john"
+              </Text>{" "}
+              to auto-fill details.
+            </Text>
+          </View>
+          <View style={styles.previewWrapper}>
+            <Text style={styles.previewLabel}>List Preview</Text>
+            <View pointerEvents="none" style={styles.previewRowBox}>
+              <TransactionRow
+                transaction={
+                  {
+                    id: "preview",
+                    amount: 200,
+                    type: "expense",
+                    categoryId: "preview-cat",
+                    categoryName: "Food",
+                    note: "pizza with john",
+                    date: Date.now(),
+                  } as any
+                }
+                category={{
+                  id: "preview-cat",
+                  name: "Food",
+                  icon: "pizza",
+                  type: "expense",
+                  createdAt: Date.now(),
+                  // color: COLORS.active,
+                }}
+              />
+            </View>
+          </View>
         </View>
 
         <TextInput
@@ -319,15 +353,36 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 16,
   },
+  smartInputContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
   smartInputTip: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 12,
-    borderRadius: 12,
-    marginBottom: 24,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  previewWrapper: {
+    backgroundColor: COLORS.background,
+    paddingBottom: 4,
+  },
+  previewLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  previewRowBox: {
+    marginTop: -4,
   },
   tipIcon: {
     marginRight: 8,
