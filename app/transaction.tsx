@@ -136,7 +136,7 @@ export default function TransactionScreen() {
             {existingTx ? "Edit Transaction" : "Add Transaction"}
           </Text>
         </View>
-
+        <EGBlock />
         <View style={styles.typeToggle}>
           <TouchableOpacity
             style={[styles.toggleBtn, !isIncome && styles.expenseBtnActive]}
@@ -160,47 +160,6 @@ export default function TransactionScreen() {
               Income
             </Text>
           </TouchableOpacity>
-        </View>
-        <View style={styles.smartInputContainer}>
-          <View style={styles.smartInputTip}>
-            <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
-            <Text style={styles.tipText}>
-              <Text style={{ color: COLORS.text, fontWeight: "600" }}>
-                Smart Input:{" "}
-              </Text>
-              Try typing{" "}
-              <Text style={{ fontStyle: "italic", color: COLORS.text }}>
-                "200 pizza with john"
-              </Text>{" "}
-              to auto-fill details.
-            </Text>
-          </View>
-          <View style={styles.previewWrapper}>
-            <Text style={styles.previewLabel}>List Preview</Text>
-            <View pointerEvents="none" style={styles.previewRowBox}>
-              <TransactionRow
-                transaction={
-                  {
-                    id: "preview",
-                    amount: 200,
-                    type: "expense",
-                    categoryId: "preview-cat",
-                    categoryName: "Food",
-                    note: "pizza with john",
-                    date: Date.now(),
-                  } as any
-                }
-                category={{
-                  id: "preview-cat",
-                  name: "Food",
-                  icon: "pizza",
-                  type: "expense",
-                  createdAt: Date.now(),
-                  // color: COLORS.active,
-                }}
-              />
-            </View>
-          </View>
         </View>
 
         <TextInput
@@ -501,3 +460,47 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+const EGBlock = () => {
+  return (
+    <View style={styles.smartInputContainer}>
+      <View style={styles.smartInputTip}>
+        <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
+        <Text style={styles.tipText}>
+          <Text style={{ color: COLORS.text, fontWeight: "600" }}>
+            Smart Input:{"  "}
+          </Text>
+          <Text style={{ fontStyle: "italic", color: COLORS.text }}>
+            Input : "200 pizza with john"
+          </Text>
+        </Text>
+      </View>
+      <View style={styles.previewWrapper}>
+        <Text style={styles.previewLabel}>List Preview</Text>
+        <View pointerEvents="none" style={styles.previewRowBox}>
+          <TransactionRow
+            transaction={
+              {
+                id: "preview",
+                amount: 200,
+                type: "expense",
+                categoryId: "preview-cat",
+                categoryName: "Food",
+                note: "pizza with john",
+                date: Date.now(),
+              } as any
+            }
+            category={{
+              id: "preview-cat",
+              name: "Food",
+              icon: "pizza",
+              type: "expense",
+              createdAt: Date.now(),
+              // color: COLORS.active,
+            }}
+          />
+        </View>
+      </View>
+    </View>
+  );
+};
