@@ -8,14 +8,7 @@ import {
   Upload,
 } from "lucide-react-native";
 import React from "react";
-import {
-  Alert,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStore } from "../lib/store";
 
 export default function SettingsScreen() {
@@ -54,7 +47,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={24} color="#171717" />
@@ -123,15 +116,11 @@ export default function SettingsScreen() {
           </TouchableOpacity> */}
         </View>
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",

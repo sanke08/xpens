@@ -1,26 +1,32 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, SafeAreaView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { getIcon } from '../../lib/iconMap';
-import { useStore, Transaction } from '../../lib/store';
-import { TransactionRow } from '../../components/TransactionRow';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday } from "date-fns";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
+import React, { useMemo } from "react";
+import {
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { TransactionRow } from "../../components/TransactionRow";
+import { getIcon } from "../../lib/iconMap";
+import { Transaction, useStore } from "../../lib/store";
 
 export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { transactions, categories } = useStore();
 
-  const category = categories.find(c => c.id === id);
+  const category = categories.find((c) => c.id === id);
 
   const { filteredData, totalAmount } = useMemo(() => {
     let total = 0;
-    const catTxs = transactions.filter(t => t.categoryId === id);
-    
+    const catTxs = transactions.filter((t) => t.categoryId === id);
+
     // Grouping by date
     const grouped: { [key: string]: Transaction[] } = {};
-    catTxs.forEach(t => {
+    catTxs.forEach((t) => {
       total += t.amount;
       const d = new Date(t.date);
       d.setHours(0, 0, 0, 0);
@@ -29,41 +35,46 @@ export default function CategoryScreen() {
       grouped[key].push(t);
     });
 
-    const sections = Object.keys(grouped).sort((a,b) => Number(b) - Number(a)).map(key => {
-      const timestamp = Number(key);
-      let title = format(timestamp, 'MMM dd, yyyy');
-      if (isToday(timestamp)) title = 'Today';
-      else if (isYesterday(timestamp)) title = 'Yesterday';
+    const sections = Object.keys(grouped)
+      .sort((a, b) => Number(b) - Number(a))
+      .map((key) => {
+        const timestamp = Number(key);
+        let title = format(timestamp, "MMM dd, yyyy");
+        if (isToday(timestamp)) title = "Today";
+        else if (isYesterday(timestamp)) title = "Yesterday";
 
-      return {
-        title,
-        data: grouped[key]
-      };
-    });
+        return {
+          title,
+          data: grouped[key],
+        };
+      });
 
     return { filteredData: sections, totalAmount: total };
   }, [id, transactions]);
 
   if (!category) {
     return (
-      <SafeAreaView style={styles.container}>
+      <>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <ArrowLeft size={24} color="#171717" />
           </TouchableOpacity>
         </View>
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>Category not found</Text>
         </View>
-      </SafeAreaView>
+      </>
     );
   }
 
   const IconComponent = getIcon(category.icon);
-  const isIncome = category.type === 'income';
+  const isIncome = category.type === "income";
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={24} color="#171717" />
@@ -72,12 +83,24 @@ export default function CategoryScreen() {
       </View>
 
       <View style={styles.summaryCard}>
-        <View style={[styles.iconContainer, { backgroundColor: isIncome ? '#dcfce7' : '#f5f5f5' }]}>
-          <IconComponent size={32} color={isIncome ? '#16a34a' : '#171717'} />
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: isIncome ? "#dcfce7" : "#f5f5f5" },
+          ]}
+        >
+          <IconComponent size={32} color={isIncome ? "#16a34a" : "#171717"} />
         </View>
-        <Text style={styles.summaryLabel}>Total {isIncome ? 'Income' : 'Spent'}</Text>
-        <Text style={[styles.summaryAmount, { color: isIncome ? '#16a34a' : '#171717' }]}>
-          {isIncome ? '+' : ''}₹{totalAmount.toLocaleString('en-IN')}
+        <Text style={styles.summaryLabel}>
+          Total {isIncome ? "Income" : "Spent"}
+        </Text>
+        <Text
+          style={[
+            styles.summaryAmount,
+            { color: isIncome ? "#16a34a" : "#171717" },
+          ]}
+        >
+          {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
         </Text>
       </View>
 
@@ -85,10 +108,15 @@ export default function CategoryScreen() {
         sections={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TransactionRow 
-            transaction={item} 
+          <TransactionRow
+            transaction={item}
             category={category}
-            onPress={() => router.push({ pathname: '/transaction', params: { id: item.id } } as any)}
+            onPress={() =>
+              router.push({
+                pathname: "/transaction",
+                params: { id: item.id },
+              } as any)
+            }
           />
         )}
         renderSectionHeader={({ section: { title } }) => (
@@ -98,24 +126,26 @@ export default function CategoryScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No transactions in this category</Text>
+            <Text style={styles.emptyText}>
+              No transactions in this category
+            </Text>
           </View>
         }
         stickySectionHeadersEnabled={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -125,51 +155,51 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#171717',
+    fontWeight: "700",
+    color: "#171717",
   },
   summaryCard: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderColor: "#e5e5e5",
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#737373',
-    fontWeight: '500',
+    color: "#737373",
+    fontWeight: "500",
     marginBottom: 4,
   },
   summaryAmount: {
     fontSize: 36,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -1,
   },
   sectionHeader: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#737373',
+    fontWeight: "600",
+    color: "#737373",
   },
   emptyState: {
     padding: 32,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 40,
   },
   emptyText: {
-    color: '#a3a3a3',
+    color: "#a3a3a3",
     fontSize: 16,
-  }
+  },
 });
