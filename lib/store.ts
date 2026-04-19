@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { generateId } from './id';
 import { db } from './db';
+import { defaultCategories } from './categoryKeywords';
 
 // Types
 export interface Category {
@@ -46,9 +47,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadData: () => {
     try {
-      const cats = db.getAllSync<Category>('SELECT * FROM categories ORDER BY createdAt ASC;');
+      const catsDb = db.getAllSync<Category>('SELECT * FROM categories ORDER BY createdAt ASC;');
       const txs = db.getAllSync<Transaction>('SELECT * FROM transactions ORDER BY date DESC;');
-      set({ categories: cats, transactions: txs, isLoaded: true });
+      
+      const allCats = [...defaultCategories, ...catsDb];
+      
+      set({ categories: allCats, transactions: txs, isLoaded: true });
     } catch (e) {
       console.error('Error loading data', e);
       set({ isLoaded: true });

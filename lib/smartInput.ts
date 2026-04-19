@@ -1,5 +1,5 @@
 import { Category, Transaction } from "./store";
-import { FOOD_KEYWORDS, TRAVEL_KEYWORDS, SHOPPING_KEYWORDS } from "./categoryKeywords";
+import { keywordMap, normalize } from "./categoryKeywords";
 
 export interface SmartInputResult {
   amount: number | null;
@@ -72,23 +72,21 @@ export function parseSmartInput(
       }
     }
 
-    // 3. Fast Dictionary Fallback (Hundreds of items mapped in O(1) time without massive IF statements)
+    // 3. Fast Dictionary mapped by Object
     if (!suggestedCategory) {
-      const words = lowerNote.split(" ").filter((w) => w.length > 2);
+      const clean = normalize(note);
+      const words = clean.split(" ");
       
-      const hasFood = words.some(w => FOOD_KEYWORDS.has(w));
-      const hasTravel = words.some(w => TRAVEL_KEYWORDS.has(w));
-      const hasShopping = words.some(w => SHOPPING_KEYWORDS.has(w));
-
-      if (hasFood) {
-        suggestedCategory = categories.find((c) => c.name.toLowerCase() === "food") || null;
-        if (!type) type = "expense";
-      } else if (hasTravel) {
-        suggestedCategory = categories.find((c) => c.name.toLowerCase() === "travel") || null;
-        if (!type) type = "expense";
-      } else if (hasShopping) {
-        suggestedCategory = categories.find((c) => c.name.toLowerCase() === "shopping") || null;
-        if (!type) type = "expense";
+      for (const word of words) {
+        if (keywordMap.has(word)) {
+           const mappedCatId = keywordMap.get(word);
+           const found = categories.find(c => c.id === mappedCatId);
+           if (found) {
+             suggestedCategory = found;
+             type = found.type as any;
+             break;
+           }
+        }
       }
     }
   }

@@ -14,7 +14,7 @@ import {
   View,
   Modal,
 } from "react-native";
-import { getIcon } from "../lib/iconMap";
+import { getIcon, AVAILABLE_ICONS } from "../lib/iconMap";
 import { TransactionRow } from "../components/TransactionRow";
 import { parseSmartInput } from "../lib/smartInput";
 import { Category, useStore } from "../lib/store";
@@ -354,7 +354,7 @@ export default function TransactionScreen() {
             <Text style={styles.modalSub}>Select Icon</Text>
             <View style={{ marginBottom: 20 }}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                {["pizza", "car", "shopping-bag", "receipt", "activity", "banknote", "package", "circle-dot", "folder", "category"].map(iconName => {
+                {AVAILABLE_ICONS.map(iconName => {
                   const IconComp = getIcon(iconName);
                   const isSelected = newCatIcon === iconName;
                   return (
