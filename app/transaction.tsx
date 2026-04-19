@@ -12,7 +12,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
+import { getIcon } from "../lib/iconMap";
 import { TransactionRow } from "../components/TransactionRow";
 import { parseSmartInput } from "../lib/smartInput";
 import { Category, useStore } from "../lib/store";
@@ -20,7 +22,7 @@ import { Category, useStore } from "../lib/store";
 export default function TransactionScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { addTransaction, updateTransaction, transactions, categories } =
+  const { addTransaction, updateTransaction, transactions, categories, addCategory } =
     useStore();
 
   const existingTx =
@@ -41,6 +43,22 @@ export default function TransactionScreen() {
 
   const [hasInit, setHasInit] = useState(false);
   const textInputRef = useRef<TextInput>(null);
+
+  // Category Modal State
+  const [createCatModalVisible, setCreateCatModalVisible] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("folder");
+  const [newCatType, setNewCatType] = useState<"expense" | "income">("expense");
+
+  const handleCreateCategory = () => {
+    if (!newCatName.trim()) return;
+    addCategory({
+      name: newCatName.trim(),
+      icon: newCatIcon,
+      type: newCatType,
+    });
+    setCreateCatModalVisible(false);
+  };
 
   useEffect(() => {
     if (existingTx) {
@@ -75,7 +93,7 @@ export default function TransactionScreen() {
     if (!hasInit) return;
     if (existingTx && !inputText.includes(" ")) return; // don't override on edit unless they start typing naturally
 
-    const res = parseSmartInput(inputText, categories);
+    const res = parseSmartInput(inputText, categories, transactions);
     if (res.amount !== null) {
       if (res.suggestedCategory && !showDetails) {
         setSelectedCategory(res.suggestedCategory);
@@ -91,7 +109,7 @@ export default function TransactionScreen() {
 
   const handleSave = () => {
     let amount = 0;
-    const res = parseSmartInput(inputText, categories);
+    const res = parseSmartInput(inputText, categories, transactions);
     amount = res.amount || 0;
     if (amount <= 0 && existingTx) amount = existingTx.amount; // fallback
     if (amount <= 0) return; // Prevent empty
@@ -272,7 +290,21 @@ export default function TransactionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <EGBlock inputText={inputText} categories={categories} />
+        <AutoSuggestBlock 
+          inputText={inputText} 
+          categories={categories} 
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            setType(cat.type as "expense" | "income");
+          }} 
+          onOpenCreateModal={(suggestedName) => {
+            setNewCatName(suggestedName);
+            setNewCatIcon("category");
+            setNewCatType(type);
+            setCreateCatModalVisible(true);
+          }} 
+        />
+        <EGBlock inputText={inputText} categories={categories} transactions={transactions} />
         <TouchableOpacity
           style={[
             styles.saveBtn,
@@ -286,6 +318,64 @@ export default function TransactionScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={createCatModalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Custom Category</Text>
+            
+            <TextInput 
+               style={styles.fieldInput}
+               value={newCatName}
+               onChangeText={setNewCatName}
+               placeholder="Category Name"
+               placeholderTextColor={COLORS.placeholder}
+            />
+            
+            <View style={styles.typeToggle}>
+              <TouchableOpacity
+                style={[styles.toggleBtn, newCatType === 'expense' && styles.expenseBtnActive]}
+                onPress={() => setNewCatType("expense")}
+              >
+                <Text style={[styles.toggleText, newCatType === 'expense' && { color: COLORS.danger }]}>Expense</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleBtn, newCatType === 'income' && styles.incomeBtnActive]}
+                onPress={() => setNewCatType("income")}
+              >
+                <Text style={[styles.toggleText, newCatType === 'income' && { color: COLORS.success }]}>Income</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSub}>Select Icon</Text>
+            <View style={{ marginBottom: 20 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                {["pizza", "car", "shopping-bag", "receipt", "activity", "banknote", "package", "circle-dot", "folder", "category"].map(iconName => {
+                  const IconComp = getIcon(iconName);
+                  const isSelected = newCatIcon === iconName;
+                  return (
+                    <TouchableOpacity 
+                      key={iconName} 
+                      style={[styles.iconSelectBtn, isSelected && { borderColor: COLORS.text, backgroundColor: COLORS.active }]}
+                      onPress={() => setNewCatIcon(iconName)}
+                    >
+                      <IconComp size={24} color={isSelected ? COLORS.text : COLORS.muted} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: COLORS.text }]} onPress={handleCreateCategory}>
+               <Text style={[styles.saveBtnText, { color: COLORS.background }]}>Create Category</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginTop: 16, alignItems: 'center' }} onPress={() => setCreateCatModalVisible(false)}>
+               <Text style={{ color: COLORS.muted, fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
@@ -446,7 +536,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     backgroundColor: COLORS.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   saveBtn: {
     paddingVertical: 18,
@@ -458,18 +552,60 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalSub: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.muted,
+    marginBottom: 12,
+  },
+  iconSelectBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  suggestContainer: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 });
 
 const EGBlock = ({
   inputText,
   categories,
+  transactions,
 }: {
   inputText: string;
   categories: Category[];
+  transactions: any[];
 }) => {
   const isTyping = inputText.trim().length > 0;
   const textToParse = isTyping ? inputText : "200 pizza with john";
-  const parsed = parseSmartInput(textToParse, categories);
+  const parsed = parseSmartInput(textToParse, categories, transactions);
 
   const amount = parsed.amount || (isTyping ? 0 : 200);
   const type = parsed.type || "expense";
@@ -523,6 +659,56 @@ const EGBlock = ({
           />
         </View>
       </View>
+    </View>
+  );
+};
+
+const AutoSuggestBlock = ({
+  inputText,
+  categories,
+  onSelectCategory,
+  onOpenCreateModal,
+}: {
+  inputText: string;
+  categories: Category[];
+  onSelectCategory: (cat: Category) => void;
+  onOpenCreateModal: (name: string) => void;
+}) => {
+  const isTyping = inputText.trim().length > 0;
+  if (!isTyping) return null;
+
+  const numberMatch = inputText.match(/\d+(\.\d+)?/);
+  const noteContent = inputText.replace(numberMatch ? numberMatch[0] : "", "").trim().toLowerCase();
+  
+  if (!noteContent) return null;
+
+  const words = noteContent.split(" ").filter(w => w.length > 1);
+  const searchWord = words[0] || noteContent;
+
+  const matchedCats = categories.filter(c => c.name.toLowerCase().includes(searchWord));
+  const exactMatch = categories.find(c => c.name.toLowerCase() === searchWord);
+
+  return (
+    <View style={styles.suggestContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {matchedCats.map(c => (
+          <TouchableOpacity 
+            key={c.id} 
+            style={styles.catChip} 
+            onPress={() => onSelectCategory(c)}
+          >
+            <Text style={styles.catText}>{c.name}</Text>
+          </TouchableOpacity>
+        ))}
+        {!exactMatch && (
+          <TouchableOpacity 
+            style={[styles.catChip, { backgroundColor: COLORS.active, borderColor: COLORS.text, borderStyle: 'dashed' }]} 
+            onPress={() => onOpenCreateModal(searchWord)}
+          >
+            <Text style={[styles.catText, { color: COLORS.text }]}>+ Create "{searchWord}"</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
     </View>
   );
 };
