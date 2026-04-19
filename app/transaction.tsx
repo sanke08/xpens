@@ -270,7 +270,9 @@ export default function TransactionScreen() {
           </View>
         )}
       </ScrollView>
-      <EGBlock />
+      <View style={{ paddingHorizontal: 24 }}>
+        <EGBlock inputText={inputText} categories={categories} />
+      </View>
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -463,7 +465,25 @@ const styles = StyleSheet.create({
   },
 });
 
-const EGBlock = () => {
+const EGBlock = ({
+  inputText,
+  categories,
+}: {
+  inputText: string;
+  categories: Category[];
+}) => {
+  const isTyping = inputText.trim().length > 0;
+  const textToParse = isTyping ? inputText : "200 pizza with john";
+  const parsed = parseSmartInput(textToParse, categories);
+
+  const amount = parsed.amount || (isTyping ? 0 : 200);
+  const type = parsed.type || "expense";
+  const note = parsed.note || (isTyping ? "" : "pizza with john");
+  const suggestedCat = parsed.suggestedCategory;
+
+  const categoryName = suggestedCat?.name || (isTyping ? "Uncategorized" : "Food");
+  const categoryIcon = suggestedCat?.icon || (isTyping ? "circle-dot" : "pizza");
+
   return (
     <View style={styles.smartInputContainer}>
       <View style={styles.smartInputTip}>
@@ -473,7 +493,7 @@ const EGBlock = () => {
             Smart Input:{"  "}
           </Text>
           <Text style={{ fontStyle: "italic", color: COLORS.text }}>
-            Input : "200 pizza with john"
+            {isTyping ? `Input : "${inputText}"` : `Example : "200 pizza with john"`}
           </Text>
         </Text>
       </View>
@@ -484,22 +504,23 @@ const EGBlock = () => {
             transaction={
               {
                 id: "preview",
-                amount: 200,
-                type: "expense",
-                categoryId: "preview-cat",
-                categoryName: "Food",
-                note: "pizza with john",
+                amount: amount,
+                type: type,
+                categoryId: suggestedCat?.id || "preview-cat",
+                categoryName: categoryName,
+                note: note,
                 date: Date.now(),
               } as any
             }
-            category={{
-              id: "preview-cat",
-              name: "Food",
-              icon: "pizza",
-              type: "expense",
-              createdAt: Date.now(),
-              // color: COLORS.active,
-            }}
+            category={
+              suggestedCat || {
+                id: "preview-cat",
+                name: categoryName,
+                icon: categoryIcon,
+                type: type as any,
+                createdAt: Date.now(),
+              }
+            }
           />
         </View>
       </View>
