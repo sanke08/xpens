@@ -136,7 +136,7 @@ export default function TransactionScreen() {
             {existingTx ? "Edit Transaction" : "Add Transaction"}
           </Text>
         </View>
-        <EGBlock />
+
         <View style={styles.typeToggle}>
           <TouchableOpacity
             style={[styles.toggleBtn, !isIncome && styles.expenseBtnActive]}
@@ -175,6 +175,7 @@ export default function TransactionScreen() {
           autoCapitalize="sentences"
           returnKeyType="done"
           onSubmitEditing={handleSave}
+          multiline
         />
 
         {!showDetails && (
@@ -269,6 +270,7 @@ export default function TransactionScreen() {
           </View>
         )}
       </ScrollView>
+      <EGBlock />
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -371,7 +373,7 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
   },
   smartInput: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 16,
