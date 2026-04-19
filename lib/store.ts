@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as Crypto from 'expo-crypto';
+import { generateId } from './id';
 import { db } from './db';
 
 // Types
@@ -56,7 +56,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addTransaction: (txData) => {
-    const id = Crypto.randomUUID();
+    const id = generateId();
     const now = Date.now();
     const tx: Transaction = { ...txData, id, createdAt: now, updatedAt: now };
     
@@ -94,7 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addCategory: (catData) => {
-    const id = Crypto.randomUUID();
+    const id = generateId();
     const now = Date.now();
     const cat: Category = { ...catData, id, createdAt: now };
 

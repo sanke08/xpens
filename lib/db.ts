@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import * as Crypto from 'expo-crypto';
+import { generateId } from './id';
 
 // Initialize the database asynchronously, but we return the reference
 export const db = SQLite.openDatabaseSync('rxpense.db');
@@ -34,13 +34,13 @@ export const initDb = () => {
   const row = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories;');
   if (row && row.count === 0) {
     const defaultCategories = [
-      { id: Crypto.randomUUID(), name: 'Food', icon: 'pizza', type: 'expense' },
-      { id: Crypto.randomUUID(), name: 'Travel', icon: 'car', type: 'expense' },
-      { id: Crypto.randomUUID(), name: 'Shopping', icon: 'shopping-bag', type: 'expense' },
-      { id: Crypto.randomUUID(), name: 'Bills', icon: 'receipt', type: 'expense' },
-      { id: Crypto.randomUUID(), name: 'Health', icon: 'activity', type: 'expense' },
-      { id: Crypto.randomUUID(), name: 'Salary', icon: 'banknote', type: 'income' },
-      { id: Crypto.randomUUID(), name: 'Misc', icon: 'package', type: 'expense' }
+      { id: generateId(), name: 'Food', icon: 'pizza', type: 'expense' },
+      { id: generateId(), name: 'Travel', icon: 'car', type: 'expense' },
+      { id: generateId(), name: 'Shopping', icon: 'shopping-bag', type: 'expense' },
+      { id: generateId(), name: 'Bills', icon: 'receipt', type: 'expense' },
+      { id: generateId(), name: 'Health', icon: 'activity', type: 'expense' },
+      { id: generateId(), name: 'Salary', icon: 'banknote', type: 'income' },
+      { id: generateId(), name: 'Misc', icon: 'package', type: 'expense' }
     ];
 
     const statement = db.prepareSync('INSERT INTO categories (id, name, icon, type, createdAt) VALUES (?, ?, ?, ?, ?)');
