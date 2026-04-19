@@ -9,11 +9,31 @@ interface TransactionRowProps {
   transaction: Transaction;
   category?: Category;
   onPress?: () => void;
+  variant?: 'default' | 'category';
 }
 
-export function TransactionRow({ transaction, category, onPress }: TransactionRowProps) {
+export function TransactionRow({ transaction, category, onPress, variant = 'default' }: TransactionRowProps) {
   const IconComponent = getIcon(category?.icon);
   const isIncome = transaction.type === 'income';
+
+  const primaryText = variant === 'category' 
+    ? (transaction.title || transaction.note || transaction.categoryName || 'Uncategorized')
+    : (transaction.categoryName || 'Uncategorized');
+
+  let secondaryText = '';
+  if (variant === 'category') {
+    if (transaction.title && transaction.note) {
+      secondaryText = transaction.note;
+    }
+  } else {
+    if (transaction.title && transaction.note) {
+      secondaryText = `${transaction.title} • ${transaction.note}`;
+    } else if (transaction.title) {
+      secondaryText = transaction.title;
+    } else if (transaction.note) {
+      secondaryText = `• ${transaction.note}`;
+    }
+  }
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7} disabled={!onPress}>
@@ -22,11 +42,10 @@ export function TransactionRow({ transaction, category, onPress }: TransactionRo
       </View>
       
       <View style={styles.content}>
-        <Text style={styles.categoryName}>{transaction.categoryName || 'Uncategorized'}</Text>
-        {(transaction.title || transaction.note) ? (
+        <Text style={styles.categoryName} numberOfLines={1}>{primaryText}</Text>
+        {secondaryText ? (
           <Text style={styles.note} numberOfLines={1}>
-            {transaction.title ? `${transaction.title} ` : ''}
-            {transaction.note ? `• ${transaction.note}` : ''}
+            {secondaryText}
           </Text>
         ) : null}
       </View>

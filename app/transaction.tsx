@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,19 +13,23 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
 } from "react-native";
-import { getIcon, AVAILABLE_ICONS } from "../lib/iconMap";
 import { TransactionRow } from "../components/TransactionRow";
+import { keywordMap } from "../lib/categoryKeywords";
+import { AVAILABLE_ICONS, getIcon } from "../lib/iconMap";
 import { parseSmartInput } from "../lib/smartInput";
 import { Category, useStore } from "../lib/store";
-import { keywordMap } from "../lib/categoryKeywords";
 
 export default function TransactionScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { addTransaction, updateTransaction, transactions, categories, addCategory } =
-    useStore();
+  const {
+    addTransaction,
+    updateTransaction,
+    transactions,
+    categories,
+    addCategory,
+  } = useStore();
 
   const existingTx =
     typeof id === "string" ? transactions.find((t) => t.id === id) : undefined;
@@ -197,34 +202,34 @@ export default function TransactionScreen() {
           multiline
         />
 
-        {!showDetails && (
-          <View style={styles.hintArea}>
+        <View style={styles.hintArea}>
+          {showDetails ? (
             <Text style={styles.hintText}>
               Category:{" "}
               <Text style={{ fontWeight: "700", color: COLORS.text }}>
                 {selectedCategory?.name || "None"}
               </Text>
             </Text>
-            <TouchableOpacity
-              onPress={() => setShowDetails(true)}
-              style={styles.expandBtn}
-            >
-              <Text style={styles.expandText}>More Details</Text>
+          ) : (
+            <View />
+          )}
+          <TouchableOpacity
+            onPress={() => setShowDetails((p) => !p)}
+            style={styles.expandBtn}
+          >
+            <Text style={styles.expandText}>
+              {showDetails ? "Hide" : "Show"} Details
+            </Text>
+            {showDetails ? (
               <ChevronDown size={16} color={COLORS.muted} />
-            </TouchableOpacity>
-          </View>
-        )}
+            ) : (
+              <ChevronUp size={16} color={COLORS.muted} />
+            )}
+          </TouchableOpacity>
+        </View>
 
         {showDetails && (
           <View style={styles.detailsArea}>
-            <TouchableOpacity
-              onPress={() => setShowDetails(false)}
-              style={styles.expandBtn}
-            >
-              <Text style={styles.expandText}>Less Details</Text>
-              <ChevronUp size={16} color={COLORS.muted} />
-            </TouchableOpacity>
-
             <View style={styles.catsList}>
               <ScrollView
                 horizontal
@@ -291,25 +296,30 @@ export default function TransactionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <AutoSuggestBlock 
-          inputText={inputText} 
-          categories={categories} 
-          onSelectCategory={(cat) => {
+        <AutoSuggestBlock
+          inputText={inputText}
+          categories={categories}
+          onSelectCategory={(cat, wordOverride) => {
             setSelectedCategory(cat);
             setType(cat.type as "expense" | "income");
             // Auto-complete the text
             const numberMatch = inputText.match(/\d+(\.\d+)?/);
             const amountStr = numberMatch ? numberMatch[0] : "";
-            setInputText(amountStr ? `${amountStr} ${cat.name.toLowerCase()}` : cat.name.toLowerCase());
-          }} 
+            const word = wordOverride ? wordOverride : cat.name.toLowerCase();
+            setInputText(amountStr ? `${amountStr} ${word}` : word);
+          }}
           onOpenCreateModal={(suggestedName) => {
             setNewCatName(suggestedName);
             setNewCatIcon("category");
             setNewCatType(type);
             setCreateCatModalVisible(true);
-          }} 
+          }}
         />
-        <EGBlock inputText={inputText} categories={categories} transactions={transactions} />
+        <EGBlock
+          inputText={inputText}
+          categories={categories}
+          transactions={transactions}
+        />
         <TouchableOpacity
           style={[
             styles.saveBtn,
@@ -325,62 +335,109 @@ export default function TransactionScreen() {
       </View>
 
       <Modal visible={createCatModalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Custom Category</Text>
-            
-            <TextInput 
-               style={styles.fieldInput}
-               value={newCatName}
-               onChangeText={setNewCatName}
-               placeholder="Category Name"
-               placeholderTextColor={COLORS.placeholder}
+
+            <TextInput
+              style={styles.fieldInput}
+              value={newCatName}
+              onChangeText={setNewCatName}
+              placeholder="Category Name"
+              placeholderTextColor={COLORS.placeholder}
             />
-            
+
             <View style={styles.typeToggle}>
               <TouchableOpacity
-                style={[styles.toggleBtn, newCatType === 'expense' && styles.expenseBtnActive]}
+                style={[
+                  styles.toggleBtn,
+                  newCatType === "expense" && styles.expenseBtnActive,
+                ]}
                 onPress={() => setNewCatType("expense")}
               >
-                <Text style={[styles.toggleText, newCatType === 'expense' && { color: COLORS.danger }]}>Expense</Text>
+                <Text
+                  style={[
+                    styles.toggleText,
+                    newCatType === "expense" && { color: COLORS.danger },
+                  ]}
+                >
+                  Expense
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.toggleBtn, newCatType === 'income' && styles.incomeBtnActive]}
+                style={[
+                  styles.toggleBtn,
+                  newCatType === "income" && styles.incomeBtnActive,
+                ]}
                 onPress={() => setNewCatType("income")}
               >
-                <Text style={[styles.toggleText, newCatType === 'income' && { color: COLORS.success }]}>Income</Text>
+                <Text
+                  style={[
+                    styles.toggleText,
+                    newCatType === "income" && { color: COLORS.success },
+                  ]}
+                >
+                  Income
+                </Text>
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalSub}>Select Icon</Text>
             <View style={{ marginBottom: 20 }}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                {AVAILABLE_ICONS.map(iconName => {
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {AVAILABLE_ICONS.map((iconName) => {
                   const IconComp = getIcon(iconName);
                   const isSelected = newCatIcon === iconName;
                   return (
-                    <TouchableOpacity 
-                      key={iconName} 
-                      style={[styles.iconSelectBtn, isSelected && { borderColor: COLORS.text, backgroundColor: COLORS.active }]}
+                    <TouchableOpacity
+                      key={iconName}
+                      style={[
+                        styles.iconSelectBtn,
+                        isSelected && {
+                          borderColor: COLORS.text,
+                          backgroundColor: COLORS.active,
+                        },
+                      ]}
                       onPress={() => setNewCatIcon(iconName)}
                     >
-                      <IconComp size={24} color={isSelected ? COLORS.text : COLORS.muted} />
+                      <IconComp
+                        size={24}
+                        color={isSelected ? COLORS.text : COLORS.muted}
+                      />
                     </TouchableOpacity>
                   );
                 })}
               </ScrollView>
             </View>
 
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: COLORS.text }]} onPress={handleCreateCategory}>
-               <Text style={[styles.saveBtnText, { color: COLORS.background }]}>Create Category</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: COLORS.text }]}
+              onPress={handleCreateCategory}
+            >
+              <Text style={[styles.saveBtnText, { color: COLORS.background }]}>
+                Create Category
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ marginTop: 16, alignItems: 'center' }} onPress={() => setCreateCatModalVisible(false)}>
-               <Text style={{ color: COLORS.muted, fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+            <TouchableOpacity
+              style={{ marginTop: 16, alignItems: "center" }}
+              onPress={() => setCreateCatModalVisible(false)}
+            >
+              <Text
+                style={{ color: COLORS.muted, fontSize: 16, fontWeight: "600" }}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </KeyboardAvoidingView>
   );
 }
@@ -481,6 +538,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 8,
+    marginBlock: 16,
   },
   hintText: {
     fontSize: 15,
@@ -490,7 +548,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-end",
-    marginBottom: 16,
   },
   expandText: {
     color: COLORS.muted,
@@ -499,7 +556,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   detailsArea: {
-    marginTop: 16,
+    // marginTop: 16,
   },
   catsList: {
     marginBottom: 20,
@@ -542,7 +599,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
     backgroundColor: COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -559,26 +616,26 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalSub: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.muted,
     marginBottom: 12,
   },
@@ -588,14 +645,14 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   suggestContainer: {
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
 });
 
@@ -676,49 +733,104 @@ const AutoSuggestBlock = ({
 }: {
   inputText: string;
   categories: Category[];
-  onSelectCategory: (cat: Category) => void;
+  onSelectCategory: (cat: Category, wordOverride?: string) => void;
   onOpenCreateModal: (name: string) => void;
 }) => {
   const isTyping = inputText.trim().length > 0;
   if (!isTyping) return null;
 
   const numberMatch = inputText.match(/\d+(\.\d+)?/);
-  const noteContent = inputText.replace(numberMatch ? numberMatch[0] : "", "").trim().toLowerCase();
-  
+  const noteContent = inputText
+    .replace(numberMatch ? numberMatch[0] : "", "")
+    .trim()
+    .toLowerCase();
+
   if (!noteContent) return null;
 
-  const words = noteContent.split(" ").filter(w => w.length > 1);
+  const words = noteContent.split(" ").filter((w) => w.length > 1);
   const searchWord = words[0] || noteContent;
-  let matchedCats = categories.filter(c => c.name.toLowerCase().includes(searchWord));
-  const exactMatch = categories.find(c => c.name.toLowerCase() === searchWord);
-  const isKeywordMapped = keywordMap.has(searchWord);
 
-  if (isKeywordMapped) {
-    const mappedCatId = keywordMap.get(searchWord);
-    const resolvedCat = categories.find(c => c.id === mappedCatId);
-    if (resolvedCat && !matchedCats.find(c => c.id === mappedCatId)) {
-      matchedCats = [resolvedCat, ...matchedCats];
+  const matchedCats: Category[] = [];
+  let exactMatch = false;
+
+  // 1. Quick lookup to avoid O(N) array `.find()` calls inside loops
+  const catById = new Map<string, Category>();
+  const catByName = new Map<string, Category>();
+
+  for (let i = 0; i < categories.length; i++) {
+    const c = categories[i];
+    catById.set(c.id, c);
+
+    const lowerName = c.name.toLowerCase();
+    catByName.set(lowerName, c);
+
+    if (lowerName.includes(searchWord)) {
+      matchedCats.push(c);
+      if (lowerName === searchWord) exactMatch = true;
+    }
+  }
+
+  const keywordMatches: { keyword: string; cat: Category }[] = [];
+  let hasExactKeywordMatch = false;
+
+  // 2. Direct for...of loop avoids `Array.from()` memory overhead
+  for (const [k, catId] of keywordMap) {
+    if (k.startsWith(searchWord)) {
+      const resolvedCat = catById.get(catId) || catByName.get(catId);
+      if (resolvedCat) {
+        keywordMatches.push({ keyword: k, cat: resolvedCat });
+        if (k === searchWord) hasExactKeywordMatch = true;
+
+        // Push directly instead of array spreading
+        if (!matchedCats.some((c) => c.id === resolvedCat.id)) {
+          matchedCats.push(resolvedCat);
+        }
+      }
     }
   }
 
   return (
     <View style={styles.suggestContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {matchedCats.map(c => (
-          <TouchableOpacity 
-            key={c.id} 
-            style={styles.catChip} 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {keywordMatches.map(({ keyword, cat }) => (
+          <TouchableOpacity
+            key={`kw-${keyword}`}
+            style={[styles.catChip, { borderColor: COLORS.text }]}
+            onPress={() => onSelectCategory(cat, keyword)}
+          >
+            <Text style={[styles.catText, { color: COLORS.text }]}>
+              {keyword}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        {matchedCats.map((c) => (
+          <TouchableOpacity
+            key={c.id}
+            style={styles.catChip}
             onPress={() => onSelectCategory(c)}
           >
             <Text style={styles.catText}>{c.name}</Text>
           </TouchableOpacity>
         ))}
-        {!exactMatch && !isKeywordMapped && (
-          <TouchableOpacity 
-            style={[styles.catChip, { backgroundColor: COLORS.active, borderColor: COLORS.text, borderStyle: 'dashed' }]} 
+        {!exactMatch && !hasExactKeywordMatch && (
+          <TouchableOpacity
+            style={[
+              styles.catChip,
+              {
+                backgroundColor: COLORS.active,
+                borderColor: COLORS.text,
+                borderStyle: "dashed",
+              },
+            ]}
             onPress={() => onOpenCreateModal(searchWord)}
           >
-            <Text style={[styles.catText, { color: COLORS.text }]}>+ Create "{searchWord}"</Text>
+            <Text style={[styles.catText, { color: COLORS.text }]}>
+              + Create "{searchWord}"
+            </Text>
           </TouchableOpacity>
         )}
       </ScrollView>

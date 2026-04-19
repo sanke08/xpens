@@ -1,5 +1,5 @@
-import { Category, Transaction } from "./store";
 import { keywordMap, normalize } from "./categoryKeywords";
+import { Category, Transaction } from "./store";
 
 export interface SmartInputResult {
   amount: number | null;
@@ -49,17 +49,39 @@ export function parseSmartInput(
       }
     }
 
-    // Adaptive Learning from History (Fastest & Smartest way)
+    // 3. Fast Dictionary mapped by Object
+    if (!suggestedCategory) {
+      const clean = normalize(note);
+      const words = clean.split(" ");
+
+      for (const word of words) {
+        if (keywordMap.has(word)) {
+          const mappedCatId = keywordMap.get(word);
+          const found = categories.find(
+            (c) => c.id === mappedCatId || c.name.toLowerCase() === mappedCatId,
+          );
+          if (found) {
+            suggestedCategory = found;
+            type = found.type as any;
+            break;
+          }
+        }
+      }
+    }
+
+    // 4. Adaptive Learning from History (Fallback)
     // If the user used these words before, we assign the same category they picked last time!
     if (!suggestedCategory && pastTransactions.length > 0) {
       const words = lowerNote.split(" ").filter((w) => w.length > 2); // Ignore short words like "to", "a"
-      
+
       for (const tx of pastTransactions) {
         if (!tx.note || !tx.categoryId) continue;
-        
+
         const txNoteLower = tx.note.toLowerCase();
         // Look for standalone word matches to avoid "car" matching "carrot"
-        const hasMatch = words.some((w) => new RegExp(`\\b${w}\\b`).test(txNoteLower));
+        const hasMatch = words.some((w) =>
+          new RegExp(`\\b${w}\\b`).test(txNoteLower),
+        );
 
         if (hasMatch) {
           const matchedCat = categories.find((c) => c.id === tx.categoryId);
@@ -68,24 +90,6 @@ export function parseSmartInput(
             type = tx.type;
             break;
           }
-        }
-      }
-    }
-
-    // 3. Fast Dictionary mapped by Object
-    if (!suggestedCategory) {
-      const clean = normalize(note);
-      const words = clean.split(" ");
-      
-      for (const word of words) {
-        if (keywordMap.has(word)) {
-           const mappedCatId = keywordMap.get(word);
-           const found = categories.find(c => c.id === mappedCatId);
-           if (found) {
-             suggestedCategory = found;
-             type = found.type as any;
-             break;
-           }
         }
       }
     }

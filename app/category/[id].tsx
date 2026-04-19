@@ -112,6 +112,7 @@ export default function CategoryScreen() {
           <TransactionRow
             transaction={item}
             category={category}
+            variant="category"
             onPress={() =>
               router.push({
                 pathname: "/transaction",
