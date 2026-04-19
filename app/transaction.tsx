@@ -1,6 +1,6 @@
 import { COLORS } from "@/lib/colors";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
@@ -161,6 +161,14 @@ export default function TransactionScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.smartInputTip}>
+          <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
+          <Text style={styles.tipText}>
+            <Text style={{ color: COLORS.text, fontWeight: "600" }}>Smart Input: </Text>
+            Try typing <Text style={{ fontStyle: "italic", color: COLORS.text }}>"200 pizza with john"</Text> to auto-fill details.
+          </Text>
+        </View>
+
         <TextInput
           ref={textInputRef}
           style={[
@@ -309,7 +317,27 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     borderRadius: 12,
     padding: 4,
+    marginBottom: 16,
+  },
+  smartInputTip: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 24,
+  },
+  tipIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.muted,
+    lineHeight: 20,
   },
   toggleBtn: {
     flex: 1,
