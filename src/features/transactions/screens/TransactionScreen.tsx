@@ -1,3 +1,5 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChevronDown, ChevronUp } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
@@ -11,19 +13,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp } from "lucide-react-native";
 
-import { COLORS } from "../../../theme/colors";
-import { TransactionRow } from "../../../components/TransactionRow";
-import { getIcon, AVAILABLE_ICONS } from "../../categories/iconMap";
-import { parseSmartInput } from "../../../utils/smartInput";
 import { useStore } from "../../../store/useStore";
+import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
+import { parseSmartInput } from "../../../utils/smartInput";
+import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
 // Extracted components
-import { EGBlock } from "../components/EGBlock";
 import { AutoSuggestBlock } from "../components/AutoSuggestBlock";
+import { EGBlock } from "../components/EGBlock";
 
 /**
  * TransactionScreen serves as the primary interface for adding or editing transactions.
@@ -71,7 +70,7 @@ export default function TransactionScreen() {
       name: newCatName.trim(),
       icon: newCatIcon,
       type: newCatType,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     } as any);
     setCreateCatModalVisible(false);
   };
@@ -229,9 +228,9 @@ export default function TransactionScreen() {
               {showDetails ? "Hide" : "Show"} Details
             </Text>
             {showDetails ? (
-              <ChevronDown size={16} color={COLORS.muted} />
-            ) : (
               <ChevronUp size={16} color={COLORS.muted} />
+            ) : (
+              <ChevronDown size={16} color={COLORS.muted} />
             )}
           </TouchableOpacity>
         </View>
@@ -454,9 +453,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollArea: {
-    padding: 24,
-  },
+  scrollArea: {},
   header: {
     marginBottom: 24,
     alignItems: "center",
@@ -561,15 +558,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   footer: {
-    paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: Platform.OS === "ios" ? 40 : 24,
     backgroundColor: COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
+    gap: 16,
   },
   saveBtn: {
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
   },

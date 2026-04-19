@@ -1,3 +1,5 @@
+import { useRouter } from "expo-router";
+import { ChevronRight, Plus } from "lucide-react-native";
 import React, { useMemo } from "react";
 import {
   ScrollView,
@@ -6,13 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
 
-import { COLORS } from "../../../theme/colors";
 import { BalanceCard } from "../../../components/BalanceCard";
 import { CategorySummaryRow } from "../../../components/CategorySummaryRow";
 import { useStore } from "../../../store/useStore";
+import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
 
 /**
@@ -45,7 +45,7 @@ export default function DashboardScreen() {
     });
 
     return Object.values(summary)
-      .filter(s => s.count > 0) // Only show categories with transactions
+      .filter((s) => s.count > 0) // Only show categories with transactions
       .sort((a, b) => b.totalAmount - a.totalAmount); // Sort by highest amount
   }, [categories, transactions]);
 
@@ -53,10 +53,7 @@ export default function DashboardScreen() {
     <>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Rxpense</Text>
-        <TouchableOpacity
-          style={styles.settingsBtn}
-          onPress={() => router.push("/settings")}
-        >
+        <TouchableOpacity onPress={() => router.push("/settings")}>
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -79,16 +76,13 @@ export default function DashboardScreen() {
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => router.push("/transactions")}>
-            <Text style={styles.viewAllBtn}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Categories</Text>
-          <TouchableOpacity onPress={() => router.push("/categories")}>
+          <TouchableOpacity
+            onPress={() => router.push("/categories")}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
             <Text style={styles.viewAllBtn}>Manage</Text>
+            <ChevronRight size={14} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -122,7 +116,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 24,
     paddingVertical: 12,
   },
   headerTitle: {
@@ -131,26 +124,17 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     letterSpacing: -0.5,
   },
-  settingsBtn: {
-    padding: 8,
-  },
   settingsIcon: {
     fontSize: 20,
   },
   scrollContent: {
     paddingBottom: 40,
+    gap: 16,
   },
   quickAddButton: {
-    marginHorizontal: 16,
-    marginTop: 24,
     backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingVertical: 16,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 4,
   },
   quickAddContent: {
     flexDirection: "row",
@@ -167,9 +151,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginHorizontal: 20,
-    marginTop: 32,
-    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -187,7 +168,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   emptyState: {
-    padding: 32,
+    // padding: 32,
     alignItems: "center",
   },
   emptyText: {
@@ -198,6 +179,5 @@ const styles = StyleSheet.create({
   emptySub: {
     color: COLORS.muted,
     fontSize: 14,
-    marginTop: 4,
   },
 });

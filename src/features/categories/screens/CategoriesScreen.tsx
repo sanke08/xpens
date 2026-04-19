@@ -1,3 +1,5 @@
+import { useRouter } from "expo-router";
+import { ArrowLeft, Plus } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -9,12 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { ArrowLeft, Plus } from "lucide-react-native";
 
+import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { getIcon } from "../iconMap";
-import { useStore } from "../../../store/useStore";
 
 /**
  * CategoriesScreen - Manage application categories.
@@ -81,43 +81,43 @@ export default function CategoriesScreen() {
               );
             })}
           </View>
-
-          {isAdding ? (
-            <View style={styles.addForm}>
-              <TextInput
-                style={styles.input}
-                placeholder="Category Name"
-                placeholderTextColor={COLORS.placeholder}
-                value={newCatName}
-                onChangeText={setNewCatName}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={handleSave}
-              />
-              <View style={styles.formActions}>
-                <TouchableOpacity
-                  style={styles.btnCancel}
-                  onPress={() => setIsAdding(false)}
-                >
-                  <Text style={styles.btnCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnSave} onPress={handleSave}>
-                  <Text style={styles.btnSaveText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => setIsAdding(true)}
-            >
-              <View style={styles.addBtnIcon}>
-                <Plus size={20} color={COLORS.text} />
-              </View>
-              <Text style={styles.addBtnText}>New Category</Text>
-            </TouchableOpacity>
-          )}
         </ScrollView>
+
+        {isAdding ? (
+          <View style={styles.addForm}>
+            <TextInput
+              style={styles.input}
+              placeholder="Category Name"
+              placeholderTextColor={COLORS.placeholder}
+              value={newCatName}
+              onChangeText={setNewCatName}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+            />
+            <View style={styles.formActions}>
+              <TouchableOpacity
+                style={styles.btnCancel}
+                onPress={() => setIsAdding(false)}
+              >
+                <Text style={styles.btnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btnSave} onPress={handleSave}>
+                <Text style={styles.btnSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setIsAdding(true)}
+          >
+            <View style={styles.addBtnIcon}>
+              <Plus size={20} color={COLORS.black} />
+            </View>
+            <Text style={styles.addBtnText}>New Category</Text>
+          </TouchableOpacity>
+        )}
       </KeyboardAvoidingView>
     </>
   );
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -155,7 +154,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
@@ -185,19 +183,16 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    backgroundColor: COLORS.active,
-    margin: 16,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: "dashed",
   },
   addBtnIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.border,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -205,7 +200,7 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.text,
+    color: COLORS.black,
   },
   addForm: {
     padding: 16,

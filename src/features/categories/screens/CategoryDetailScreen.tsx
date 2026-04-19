@@ -1,20 +1,20 @@
+import { format, isToday, isYesterday } from "date-fns";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
 import React, { useMemo } from "react";
 import {
   SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { format, isToday, isYesterday } from "date-fns";
-import { ArrowLeft } from "lucide-react-native";
 
-import { COLORS } from "../../../theme/colors";
 import { TransactionRow } from "../../../components/TransactionRow";
-import { getIcon } from "../iconMap";
 import { useStore } from "../../../store/useStore";
+import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
+import { getIcon } from "../iconMap";
 
 /**
  * CategoryDetailScreen - Specialized view for a specific category.
@@ -63,7 +63,10 @@ export default function CategoryDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <ArrowLeft size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
@@ -93,7 +96,10 @@ export default function CategoryDetailScreen() {
             { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
           ]}
         >
-          <IconComponent size={32} color={isIncome ? COLORS.success : COLORS.text} />
+          <IconComponent
+            size={32}
+            color={isIncome ? COLORS.success : COLORS.text}
+          />
         </View>
         <Text style={styles.summaryLabel}>
           Total {isIncome ? "Income" : "Spent"}
@@ -151,7 +157,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backBtn: {

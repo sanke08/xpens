@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backBtn: {
@@ -169,7 +168,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   searchContainer: {
-    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   searchBar: {
@@ -177,8 +175,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.active,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   searchInput: {
     flex: 1,
@@ -188,7 +186,6 @@ const styles = StyleSheet.create({
   },
   filtersWrapper: {
     flexDirection: "row",
-    paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -216,7 +213,6 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingHorizontal: 16,
     paddingVertical: 8,
     marginTop: 8,
   },

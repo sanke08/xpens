@@ -1,5 +1,11 @@
 import React from "react";
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
 import { keywordMap } from "../../categories/categoryKeywords";
@@ -122,7 +128,6 @@ export const AutoSuggestBlock: React.FC<AutoSuggestBlockProps> = ({
 
 const styles = StyleSheet.create({
   suggestContainer: {
-    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
   },

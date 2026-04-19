@@ -1,5 +1,7 @@
+import { useRouter } from "expo-router";
+import { ChevronRight } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { COLORS } from "../theme/colors";
 import { Transaction } from "../types";
 
@@ -31,6 +33,8 @@ export function BalanceCard({ transactions }: BalanceCardProps) {
 
   const balance = totalIncome - totalExpense;
 
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Balance</Text>
@@ -57,18 +61,31 @@ export function BalanceCard({ transactions }: BalanceCardProps) {
           {Math.abs(todayBalance).toLocaleString("en-IN")}
         </Text>
       </View>
+      <TouchableOpacity
+        onPress={() => router.push("/transactions")}
+        style={{
+          alignSelf: "flex-end",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        <Text style={styles.viewAllBtn}>View All</Text>
+        <ChevronRight size={14} color={COLORS.white} />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 12,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
-    marginHorizontal: 16,
     marginTop: 16,
   },
   label: {
@@ -111,6 +128,11 @@ const styles = StyleSheet.create({
   },
   todayText: {
     fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.lightGray,
+  },
+  viewAllBtn: {
+    fontSize: 12,
     fontWeight: "600",
     color: COLORS.lightGray,
   },

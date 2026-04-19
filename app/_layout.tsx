@@ -1,4 +1,3 @@
-import { COLORS } from "../src/theme/colors";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -7,6 +6,7 @@ import "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { dbService } from "../src/services/DatabaseService";
 import { useStore } from "../src/store/useStore";
+import { COLORS } from "../src/theme/colors";
 
 export default function RootLayout() {
   const { isLoaded, loadData } = useStore();
@@ -38,7 +38,13 @@ export default function RootLayout() {
 
   return (
     <>
-      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: COLORS.background,
+          paddingHorizontal: 20,
+        }}
+      >
         <StatusBar style="light" />
         <Stack
           screenOptions={{

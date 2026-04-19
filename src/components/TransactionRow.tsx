@@ -1,16 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { format } from 'date-fns';
+import { format } from "date-fns";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { COLORS } from '../theme/colors';
-import { getIcon } from '../features/categories/iconMap';
-import { Transaction, Category } from '../types';
+import { getIcon } from "../features/categories/iconMap";
+import { COLORS } from "../theme/colors";
+import { Category, Transaction } from "../types";
 
 interface TransactionRowProps {
   transaction: Transaction;
   category?: Category;
   onPress?: () => void;
-  variant?: 'default' | 'category';
+  variant?: "default" | "category";
 }
 
 /**
@@ -21,18 +21,21 @@ export function TransactionRow({
   transaction,
   category,
   onPress,
-  variant = 'default',
+  variant = "default",
 }: TransactionRowProps) {
   const IconComponent = getIcon(category?.icon);
-  const isIncome = transaction.type === 'income';
+  const isIncome = transaction.type === "income";
 
   const primaryText =
-    variant === 'category'
-      ? transaction.title || transaction.note || transaction.categoryName || 'Uncategorized'
-      : transaction.categoryName || 'Uncategorized';
+    variant === "category"
+      ? transaction.title ||
+        transaction.note ||
+        transaction.categoryName ||
+        "Uncategorized"
+      : transaction.categoryName || "Uncategorized";
 
-  let secondaryText = '';
-  if (variant === 'category') {
+  let secondaryText = "";
+  if (variant === "category") {
     if (transaction.title && transaction.note) {
       secondaryText = transaction.note;
     }
@@ -59,7 +62,10 @@ export function TransactionRow({
           { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
         ]}
       >
-        <IconComponent size={20} color={isIncome ? COLORS.success : COLORS.text} />
+        <IconComponent
+          size={20}
+          color={isIncome ? COLORS.success : COLORS.text}
+        />
       </View>
 
       <View style={styles.content}>
@@ -74,10 +80,15 @@ export function TransactionRow({
       </View>
 
       <View style={styles.rightContent}>
-        <Text style={[styles.amount, { color: isIncome ? COLORS.success : COLORS.text }]}>
-          {isIncome ? '+' : '-'}₹{transaction.amount.toLocaleString('en-IN')}
+        <Text
+          style={[
+            styles.amount,
+            { color: isIncome ? COLORS.success : COLORS.text },
+          ]}
+        >
+          {isIncome ? "+" : "-"}₹{transaction.amount.toLocaleString("en-IN")}
         </Text>
-        <Text style={styles.time}>{format(transaction.date, 'HH:mm')}</Text>
+        <Text style={styles.time}>{format(transaction.date, "HH:mm")}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -85,10 +96,9 @@ export function TransactionRow({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -97,38 +107,38 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   categoryName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
     marginBottom: 2,
   },
   note: {
     fontSize: 13,
     color: COLORS.muted,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   rightContent: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    alignItems: "flex-end",
+    justifyContent: "center",
     marginLeft: 8,
   },
   amount: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 2,
   },
   time: {
     fontSize: 12,
     color: COLORS.muted,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
