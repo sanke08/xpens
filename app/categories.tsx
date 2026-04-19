@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import { useRouter } from "expo-router";
 import { ArrowLeft, Plus } from "lucide-react-native";
 import React, { useState } from "react";
@@ -35,7 +36,7 @@ export default function CategoriesScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#171717" />
+          <ArrowLeft size={24} color=COLORS.text />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Categories</Text>
       </View>
@@ -54,12 +55,12 @@ export default function CategoriesScreen() {
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: isIncome ? "#dcfce7" : "#f5f5f5" },
+                    { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
                   ]}
                 >
                   <IconComponent
                     size={20}
-                    color={isIncome ? "#16a34a" : "#171717"}
+                    color={isIncome ? COLORS.success : COLORS.text}
                   />
                 </View>
                 <Text style={styles.catName}>{c.name}</Text>
@@ -73,7 +74,7 @@ export default function CategoriesScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Category Name"
-                placeholderTextColor="#a3a3a3"
+                placeholderTextColor={COLORS.placeholder}
                 value={newCatName}
                 onChangeText={setNewCatName}
                 autoFocus
@@ -95,7 +96,7 @@ export default function CategoriesScreen() {
               style={styles.addBtn}
               onPress={() => setIsAdding(true)}
             >
-              <Plus size={20} color="#171717" />
+              <Plus size={20} color=COLORS.text />
               <Text style={styles.addBtnText}>New Category</Text>
             </TouchableOpacity>
           )}
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   backBtn: {
     padding: 8,
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#171717",
+    color: COLORS.text,
   },
   content: {
     flex: 1,
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   iconBox: {
     width: 40,
@@ -146,11 +147,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "500",
-    color: "#171717",
+    color: COLORS.text,
   },
   catType: {
     fontSize: 13,
-    color: "#737373",
+    color: COLORS.muted,
     textTransform: "capitalize",
   },
   addBtn: {
@@ -162,18 +163,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     fontWeight: "600",
-    color: "#171717",
+    color: COLORS.text,
   },
   addForm: {
     padding: 16,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e5e5",
-    backgroundColor: "#ffffff",
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -189,17 +190,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   btnCancelText: {
-    color: "#737373",
+    color: COLORS.muted,
     fontWeight: "600",
   },
   btnSave: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "#171717",
+    backgroundColor: COLORS.text,
     borderRadius: 8,
   },
   btnSaveText: {
-    color: "#ffffff",
+    color: COLORS.background,
     fontWeight: "600",
   },
 });

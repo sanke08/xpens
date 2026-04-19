@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { getIcon } from '../lib/iconMap';
@@ -16,8 +17,8 @@ export function TransactionRow({ transaction, category, onPress }: TransactionRo
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7} disabled={!onPress}>
-      <View style={[styles.iconContainer, { backgroundColor: isIncome ? '#dcfce7' : '#f5f5f5' }]}>
-        <IconComponent size={20} color={isIncome ? '#16a34a' : '#171717'} />
+      <View style={[styles.iconContainer, { backgroundColor: isIncome ? COLORS.successBg : COLORS.active }]}>
+        <IconComponent size={20} color={isIncome ? COLORS.success : COLORS.text} />
       </View>
       
       <View style={styles.content}>
@@ -31,7 +32,7 @@ export function TransactionRow({ transaction, category, onPress }: TransactionRo
       </View>
 
       <View style={styles.rightContent}>
-        <Text style={[styles.amount, { color: isIncome ? '#16a34a' : '#171717' }]}>
+        <Text style={[styles.amount, { color: isIncome ? COLORS.success : COLORS.text }]}>
           {isIncome ? '+' : '-'}₹{transaction.amount.toLocaleString('en-IN')}
         </Text>
         <Text style={styles.time}>{format(transaction.date, 'HH:mm')}</Text>
@@ -46,9 +47,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderColor: COLORS.border,
   },
   iconContainer: {
     width: 40,
@@ -65,12 +66,12 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#171717',
+    color: COLORS.text,
     marginBottom: 2,
   },
   note: {
     fontSize: 13,
-    color: '#737373',
+    color: COLORS.muted,
   },
   rightContent: {
     alignItems: 'flex-end',
@@ -83,6 +84,6 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 12,
-    color: '#a3a3a3',
+    color: COLORS.gray,
   }
 });

@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import React, { useMemo } from "react";
@@ -63,7 +64,7 @@ export default function HomeScreen() {
           onPress={() => router.push("/transaction" as any)}
         >
           <View style={styles.quickAddContent}>
-            <Plus size={24} color="#ffffff" />
+            <Plus size={24} color=COLORS.background />
             <Text style={styles.quickAddText}>Add Transaction</Text>
           </View>
         </TouchableOpacity>
@@ -102,7 +103,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#171717",
+    color: COLORS.text,
     letterSpacing: -0.5,
   },
   settingsBtn: {
@@ -129,10 +130,10 @@ const styles = StyleSheet.create({
   quickAddButton: {
     marginHorizontal: 16,
     marginTop: 24,
-    backgroundColor: "#171717",
+    backgroundColor: COLORS.text,
     borderRadius: 16,
     paddingVertical: 16,
-    shadowColor: "#000",
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   quickAddText: {
-    color: "#ffffff",
+    color: COLORS.background,
     fontSize: 18,
     fontWeight: "600",
     marginLeft: 8,
@@ -160,24 +161,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#171717",
+    color: COLORS.text,
   },
   viewAllBtn: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#525252",
+    color: COLORS.lightGray,
   },
   listContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   emptyState: {
     padding: 32,
     alignItems: "center",
   },
   emptyText: {
-    color: "#a3a3a3",
+    color: COLORS.gray,
     fontSize: 16,
   },
 });

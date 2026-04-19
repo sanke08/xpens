@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -119,22 +120,22 @@ export default function TransactionScreen() {
             onPress={() => setType('expense')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.toggleText, !isIncome && { color: '#dc2626' }]}>Expense</Text>
+            <Text style={[styles.toggleText, !isIncome && { color: COLORS.danger }]}>Expense</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.toggleBtn, isIncome && styles.incomeBtnActive]}
             onPress={() => setType('income')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.toggleText, isIncome && { color: '#16a34a' }]}>Income</Text>
+            <Text style={[styles.toggleText, isIncome && { color: COLORS.success }]}>Income</Text>
           </TouchableOpacity>
         </View>
 
         <TextInput
           ref={textInputRef}
-          style={[styles.smartInput, { color: isIncome ? '#16a34a' : '#dc2626' }]}
+          style={[styles.smartInput, { color: isIncome ? COLORS.success : COLORS.danger }]}
           placeholder="0.00 or e.g. '200 pizza'"
-          placeholderTextColor="#a3a3a3"
+          placeholderTextColor={COLORS.placeholder}
           value={inputText}
           onChangeText={setInputText}
           autoCapitalize="sentences"
@@ -145,11 +146,11 @@ export default function TransactionScreen() {
         {!showDetails && (
           <View style={styles.hintArea}>
             <Text style={styles.hintText}>
-              Category: <Text style={{fontWeight:'700', color: '#171717'}}>{selectedCategory?.name || 'None'}</Text>
+              Category: <Text style={{fontWeight:'700', color: COLORS.text}}>{selectedCategory?.name || 'None'}</Text>
             </Text>
             <TouchableOpacity onPress={() => setShowDetails(true)} style={styles.expandBtn}>
               <Text style={styles.expandText}>More Details</Text>
-              <ChevronDown size={16} color="#737373" />
+              <ChevronDown size={16} color=COLORS.muted />
             </TouchableOpacity>
           </View>
         )}
@@ -158,7 +159,7 @@ export default function TransactionScreen() {
           <View style={styles.detailsArea}>
             <TouchableOpacity onPress={() => setShowDetails(false)} style={styles.expandBtn}>
               <Text style={styles.expandText}>Less Details</Text>
-              <ChevronUp size={16} color="#737373" />
+              <ChevronUp size={16} color=COLORS.muted />
             </TouchableOpacity>
 
             <View style={styles.catsList}>
@@ -184,14 +185,14 @@ export default function TransactionScreen() {
             <TextInput
               style={styles.fieldInput}
               placeholder="Title (Optional)"
-              placeholderTextColor="#a3a3a3"
+              placeholderTextColor={COLORS.placeholder}
               value={title}
               onChangeText={setTitle}
             />
             <TextInput
               style={styles.fieldInput}
               placeholder="Note (Optional)"
-              placeholderTextColor="#a3a3a3"
+              placeholderTextColor={COLORS.placeholder}
               value={note}
               onChangeText={setNote}
             />
@@ -199,14 +200,14 @@ export default function TransactionScreen() {
               <TextInput
                 style={[styles.fieldInput, { flex: 1, marginRight: 8 }]}
                 placeholder="Location"
-                placeholderTextColor="#a3a3a3"
+                placeholderTextColor={COLORS.placeholder}
                 value={location}
                 onChangeText={setLocation}
               />
               <TextInput
                 style={[styles.fieldInput, { flex: 1, marginLeft: 8 }]}
                 placeholder="With Whom"
-                placeholderTextColor="#a3a3a3"
+                placeholderTextColor={COLORS.placeholder}
                 value={withPerson}
                 onChangeText={setWithPerson}
               />
@@ -218,7 +219,7 @@ export default function TransactionScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity 
-          style={[styles.saveBtn, { backgroundColor: isIncome ? '#16a34a' : '#171717' }]}
+          style={[styles.saveBtn, { backgroundColor: isIncome ? COLORS.success : COLORS.text }]}
           onPress={handleSave}
           activeOpacity={0.8}
         >
@@ -232,7 +233,7 @@ export default function TransactionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.background,
   },
   scrollArea: {
     padding: 24,
@@ -244,11 +245,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#171717',
+    color: COLORS.text,
   },
   typeToggle: {
     flexDirection: 'row',
-    backgroundColor: '#e5e5e5',
+    backgroundColor: COLORS.border,
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
@@ -260,16 +261,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   expenseBtnActive: {
-    backgroundColor: '#fff1f2',
-    shadowColor: '#000',
+    backgroundColor: COLORS.dangerBg,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width:0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
   incomeBtnActive: {
-    backgroundColor: '#f0fdf4',
-    shadowColor: '#000',
+    backgroundColor: COLORS.successBg,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width:0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#737373',
+    color: COLORS.muted,
   },
   smartInput: {
     fontSize: 40,
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingVertical: 16,
     borderBottomWidth: 2,
-    borderColor: '#e5e5e5',
+    borderColor: COLORS.border,
   },
   hintArea: {
     flexDirection: 'row',
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontSize: 15,
-    color: '#737373',
+    color: COLORS.muted,
   },
   expandBtn: {
     flexDirection: 'row',
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   expandText: {
-    color: '#737373',
+    color: COLORS.muted,
     marginRight: 4,
     fontSize: 14,
     fontWeight: '500',
@@ -322,32 +323,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.active,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: COLORS.border,
   },
   catChipActive: {
-    backgroundColor: '#171717',
-    borderColor: '#171717',
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
   },
   catText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#525252',
+    color: COLORS.lightGray,
   },
   catTextActive: {
-    color: '#ffffff',
+    color: COLORS.background,
   },
   fieldInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: COLORS.border,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     fontSize: 16,
-    color: '#171717',
+    color: COLORS.text,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -355,9 +356,9 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderColor: COLORS.border,
   },
   saveBtn: {
     paddingVertical: 18,
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: {
-    color: '#ffffff',
+    color: COLORS.background,
     fontSize: 18,
     fontWeight: '700',
   }

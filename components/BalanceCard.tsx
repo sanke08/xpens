@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Transaction } from '../lib/store';
@@ -37,11 +38,11 @@ export function BalanceCard({ transactions }: BalanceCardProps) {
       <View style={styles.row}>
         <View style={styles.half}>
           <Text style={styles.subLabel}>Income</Text>
-          <Text style={[styles.subAmount, { color: '#16a34a' }]}>+₹{totalIncome.toLocaleString('en-IN')}</Text>
+          <Text style={[styles.subAmount, { color: COLORS.success }]}>+₹{totalIncome.toLocaleString('en-IN')}</Text>
         </View>
         <View style={styles.half}>
           <Text style={styles.subLabel}>Expense</Text>
-          <Text style={[styles.subAmount, { color: '#dc2626' }]}>-₹{totalExpense.toLocaleString('en-IN')}</Text>
+          <Text style={[styles.subAmount, { color: COLORS.danger }]}>-₹{totalExpense.toLocaleString('en-IN')}</Text>
         </View>
       </View>
 
@@ -57,12 +58,12 @@ export function BalanceCard({ transactions }: BalanceCardProps) {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     borderRadius: 24,
     marginHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
-    shadowColor: '#000',
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -71,14 +72,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: '#737373',
+    color: COLORS.muted,
     fontFamily: 'System',
     fontWeight: '500',
     marginBottom: 4,
   },
   balance: {
     fontSize: 48,
-    color: '#171717',
+    color: COLORS.text,
     fontWeight: '800',
     fontFamily: 'System',
     letterSpacing: -1,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   },
   subLabel: {
     fontSize: 14,
-    color: '#a3a3a3',
+    color: COLORS.gray,
     fontWeight: '500',
     marginBottom: 4,
   },
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   todayBanner: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.active,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -113,6 +114,6 @@ const styles = StyleSheet.create({
   todayText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#525252',
+    color: COLORS.lightGray,
   }
 });

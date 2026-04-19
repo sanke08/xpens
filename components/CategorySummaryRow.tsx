@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { getIcon } from '../lib/iconMap';
@@ -15,8 +16,8 @@ interface CategorySummaryRowProps {
 export function CategorySummaryRow({ category, totalAmount, transactionCount, latestTransactionDate, onPress }: CategorySummaryRowProps) {
   const IconComponent = getIcon(category.icon);
 
-  const color = category.type === 'income' ? '#16a34a' : '#171717';
-  const bgColor = category.type === 'income' ? '#dcfce7' : '#f5f5f5';
+  const color = category.type === 'income' ? COLORS.success : COLORS.text;
+  const bgColor = category.type === 'income' ? COLORS.successBg : COLORS.active;
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
@@ -33,7 +34,7 @@ export function CategorySummaryRow({ category, totalAmount, transactionCount, la
       </View>
       
       <View style={styles.amountContainer}>
-        <Text style={[styles.amount, category.type === 'income' && { color: '#16a34a' }]}>
+        <Text style={[styles.amount, category.type === 'income' && { color: COLORS.success }]}>
           {category.type === 'income' ? '+' : ''}₹{totalAmount.toLocaleString('en-IN')}
         </Text>
       </View>
@@ -47,9 +48,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: COLORS.border,
   },
   iconContainer: {
     width: 48,
@@ -66,12 +67,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#171717',
+    color: COLORS.text,
     marginBottom: 4,
   },
   meta: {
     fontSize: 13,
-    color: '#737373',
+    color: COLORS.muted,
   },
   amountContainer: {
     alignItems: 'flex-end',
@@ -80,6 +81,6 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#171717',
+    color: COLORS.text,
   }
 });

@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -25,12 +26,12 @@ export default function RootLayout() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "#ffffff",
+          backgroundColor: COLORS.background,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color=COLORS.text />
       </View>
     );
   }
@@ -42,7 +43,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: "#ffffff" },
+            contentStyle: { backgroundColor: COLORS.background },
           }}
         >
           <Stack.Screen name="index" />
@@ -51,7 +52,7 @@ export default function RootLayout() {
             options={{
               presentation: "formSheet",
               sheetGrabberVisible: true,
-              contentStyle: { backgroundColor: "#f9f9f9" },
+              contentStyle: { backgroundColor: COLORS.background },
             }}
           />
           <Stack.Screen name="categories" />

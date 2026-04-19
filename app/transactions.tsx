@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import { format, isToday, isYesterday } from "date-fns";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Search } from "lucide-react-native";
@@ -75,18 +76,18 @@ export default function TransactionsScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#171717" />
+          <ArrowLeft size={24} color=COLORS.text />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Transactions</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color="#737373" />
+          <Search size={20} color=COLORS.muted />
           <TextInput
             style={styles.searchInput}
             placeholder="Search transactions..."
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={COLORS.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#171717",
+    color: COLORS.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.active,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -208,38 +209,38 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: "#171717",
+    color: COLORS.text,
   },
   filtersWrapper: {
     flexDirection: "row",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.active,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   filterChipActive: {
-    backgroundColor: "#171717",
-    borderColor: "#171717",
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
   },
   filterText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#525252",
+    color: COLORS.lightGray,
   },
   filterTextActive: {
-    color: "#ffffff",
+    color: COLORS.background,
   },
   sectionHeader: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: COLORS.background,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginTop: 8,
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#737373",
+    color: COLORS.muted,
   },
   emptyState: {
     padding: 32,
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    color: "#a3a3a3",
+    color: COLORS.gray,
     fontSize: 16,
   },
 });

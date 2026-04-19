@@ -1,3 +1,4 @@
+import { COLORS } from '@/lib/colors';
 import { format, isToday, isYesterday } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -60,7 +61,7 @@ export default function CategoryScreen() {
             style={styles.backBtn}
             onPress={() => router.back()}
           >
-            <ArrowLeft size={24} color="#171717" />
+            <ArrowLeft size={24} color=COLORS.text />
           </TouchableOpacity>
         </View>
         <View style={styles.emptyState}>
@@ -77,7 +78,7 @@ export default function CategoryScreen() {
     <>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#171717" />
+          <ArrowLeft size={24} color=COLORS.text />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{category.name}</Text>
       </View>
@@ -86,10 +87,10 @@ export default function CategoryScreen() {
         <View
           style={[
             styles.iconContainer,
-            { backgroundColor: isIncome ? "#dcfce7" : "#f5f5f5" },
+            { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
           ]}
         >
-          <IconComponent size={32} color={isIncome ? "#16a34a" : "#171717"} />
+          <IconComponent size={32} color={isIncome ? COLORS.success : COLORS.text} />
         </View>
         <Text style={styles.summaryLabel}>
           Total {isIncome ? "Income" : "Spent"}
@@ -97,7 +98,7 @@ export default function CategoryScreen() {
         <Text
           style={[
             styles.summaryAmount,
-            { color: isIncome ? "#16a34a" : "#171717" },
+            { color: isIncome ? COLORS.success : COLORS.text },
           ]}
         >
           {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
@@ -141,7 +142,7 @@ export default function CategoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -156,13 +157,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#171717",
+    color: COLORS.text,
   },
   summaryCard: {
     alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e5e5e5",
+    borderColor: COLORS.border,
   },
   iconContainer: {
     width: 64,
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#737373",
+    color: COLORS.muted,
     fontWeight: "500",
     marginBottom: 4,
   },
@@ -184,14 +185,14 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   sectionHeader: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: COLORS.background,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#737373",
+    color: COLORS.muted,
   },
   emptyState: {
     padding: 32,
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    color: "#a3a3a3",
+    color: COLORS.gray,
     fontSize: 16,
   },
 });
