@@ -52,7 +52,7 @@ export const EGBlock: React.FC<EGBlockProps> = ({
       </View>
       <View style={styles.previewWrapper}>
         <Text style={styles.previewLabel}>List Preview</Text>
-        <View pointerEvents="none" style={styles.previewRowBox}>
+        <View pointerEvents="none">
           <TransactionRow
             transaction={
               {
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
-    overflow: "hidden",
+    // overflow: "hidden",
     paddingHorizontal: 12,
   },
   smartInputTip: {
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   previewWrapper: {
     backgroundColor: COLORS.background,
     paddingBottom: 4,
+    gap: 8,
   },
   previewLabel: {
     fontSize: 11,
@@ -107,9 +108,6 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  previewRowBox: {
-    marginTop: -4,
   },
   tipIcon: {
     marginRight: 8,

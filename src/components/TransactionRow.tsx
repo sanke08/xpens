@@ -98,8 +98,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    backgroundColor: COLORS.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
