@@ -205,7 +205,6 @@ const styles = StyleSheet.create({
   addForm: {
     padding: 16,
     backgroundColor: COLORS.card,
-    marginHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,

@@ -1,5 +1,3 @@
-import React from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -9,9 +7,11 @@ import {
   Trash2,
   Upload,
 } from "lucide-react-native";
+import React from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { COLORS } from "../../../theme/colors";
 import { useStore } from "../../../store/useStore";
+import { COLORS } from "../../../theme/colors";
 
 /**
  * SettingsScreen - Application configuration and data maintenance.
@@ -28,7 +28,10 @@ export default function SettingsScreen() {
     };
     const json = JSON.stringify(data, null, 2);
     // Real-world implementation would use Expo FileSystem or Share API
-    Alert.alert("Export Ready", `Data size: ${json.length} bytes\n(JSON generated)`);
+    Alert.alert(
+      "Export Ready",
+      `Data size: ${json.length} bytes\n(JSON generated)`,
+    );
   };
 
   const handleClearData = () => {
@@ -123,7 +126,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
@@ -148,7 +150,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.muted,
-    marginLeft: 24,
     marginBottom: 8,
     textTransform: "uppercase",
   },
@@ -158,7 +159,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: COLORS.background,
     paddingVertical: 16,
-    paddingHorizontal: 24,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
