@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ArrowLeft, Clock, Plus, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Clock, Plus } from "lucide-react-native";
 import React from "react";
 import {
   FlatList,
@@ -8,16 +8,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SwipeableRow } from "../../../components/SwipeableRow";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { RecurringTransaction } from "../../../types";
-import { SwipeableRow } from "../../../components/SwipeableRow";
 
 export default function RecurringTransactionsScreen() {
   const router = useRouter();
-  const { recurringTransactions, deleteRecurringTransaction, categories } = useStore();
+  const { recurringTransactions, deleteRecurringTransaction, categories } =
+    useStore();
 
-  const getCategory = (id: string | null) => categories.find((c) => c.id === id);
+  const getCategory = (id: string | null) =>
+    categories.find((c) => c.id === id);
 
   const renderItem = ({ item }: { item: RecurringTransaction }) => {
     const category = getCategory(item.categoryId);
@@ -26,22 +28,40 @@ export default function RecurringTransactionsScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.titleGroup}>
-              <Text style={styles.cardTitle}>{item.categoryName || "Uncategorized"}</Text>
-              {item.title ? <Text style={styles.cardSubtitle}>{item.title}</Text> : null}
+              <Text style={styles.cardTitle}>
+                {item.categoryName || "Uncategorized"}
+              </Text>
+              {item.title ? (
+                <Text style={styles.cardSubtitle}>{item.title}</Text>
+              ) : null}
             </View>
-            <Text style={[styles.amount, { color: item.type === "income" ? COLORS.success : COLORS.text }]}>
-              {item.type === "income" ? "+" : "-"}₹{item.amount.toLocaleString("en-IN")}
+            <Text
+              style={[
+                styles.amount,
+                {
+                  color: item.type === "income" ? COLORS.success : COLORS.text,
+                },
+              ]}
+            >
+              {item.type === "income" ? "+" : "-"}₹
+              {item.amount.toLocaleString("en-IN")}
             </Text>
           </View>
-          
+
           <View style={styles.details}>
             <View style={styles.badge}>
               <Clock size={12} color={COLORS.muted} />
-              <Text style={styles.badgeText}>{item.interval.charAt(0).toUpperCase() + item.interval.slice(1)}</Text>
+              <Text style={styles.badgeText}>
+                {item.interval.charAt(0).toUpperCase() + item.interval.slice(1)}
+              </Text>
             </View>
             {!item.isActive && (
-              <View style={[styles.badge, { backgroundColor: COLORS.dangerBg }]}>
-                <Text style={[styles.badgeText, { color: COLORS.danger }]}>Paused</Text>
+              <View
+                style={[styles.badge, { backgroundColor: COLORS.dangerBg }]}
+              >
+                <Text style={[styles.badgeText, { color: COLORS.danger }]}>
+                  Paused
+                </Text>
               </View>
             )}
           </View>
@@ -68,7 +88,9 @@ export default function RecurringTransactionsScreen() {
           <View style={styles.emptyState}>
             <Clock size={64} color={COLORS.active} strokeWidth={1} />
             <Text style={styles.emptyText}>No recurring transactions</Text>
-            <Text style={styles.emptySub}>Automate your rent, bills, or subscriptions</Text>
+            <Text style={styles.emptySub}>
+              Automate your rent, bills, or subscriptions
+            </Text>
           </View>
         }
       />
@@ -86,7 +108,6 @@ export default function RecurringTransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -103,14 +124,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   listContent: {
-    padding: 16,
     paddingBottom: 100,
   },
   card: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },

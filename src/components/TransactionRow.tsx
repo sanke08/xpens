@@ -98,8 +98,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    paddingVertical: 14,
   },
   iconContainer: {
     width: 40,

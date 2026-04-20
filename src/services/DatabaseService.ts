@@ -34,7 +34,9 @@ class DatabaseService {
         type TEXT NOT NULL,
         createdAt INTEGER NOT NULL
       );
+    `);
 
+    this.db.execSync(`
       CREATE TABLE IF NOT EXISTS transactions (
         id TEXT PRIMARY KEY NOT NULL,
         amount REAL NOT NULL,
@@ -49,7 +51,9 @@ class DatabaseService {
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL
       );
+    `);
 
+    this.db.execSync(`
       CREATE TABLE IF NOT EXISTS recurring_transactions (
         id TEXT PRIMARY KEY NOT NULL,
         amount REAL NOT NULL,

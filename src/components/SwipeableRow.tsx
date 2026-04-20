@@ -63,7 +63,6 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
       friction={2}
       rightThreshold={40}
       enableTrackpadTwoFingerGesture
-      childrenContainerStyle={{ paddingVertical: 6 }}
     >
       {children}
     </ReanimatedSwipeable>
@@ -78,8 +77,6 @@ const styles = StyleSheet.create({
   },
   deleteIconContainer: {
     backgroundColor: COLORS.card,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     width: 90,

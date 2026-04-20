@@ -73,7 +73,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   processRecurringTransactions: () => {
-    const { recurringTransactions, transactions } = get();
+    const { recurringTransactions } = get();
     const now = Date.now();
     const today = startOfDay(now).getTime();
 
@@ -88,15 +88,20 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Calculate next occurrences
       const occurrences: number[] = [];
-      while (true) {
+      const MAX_OCCURRENCES = 365; // Safety limit
+      let count = 0;
+
+      while (count < MAX_OCCURRENCES) {
         if (rt.interval === "daily") nextDate = addDays(nextDate, 1).getTime();
         else if (rt.interval === "weekly")
           nextDate = addWeeks(nextDate, 1).getTime();
         else if (rt.interval === "monthly")
           nextDate = addMonths(nextDate, 1).getTime();
+        else break;
 
         if (isAfter(nextDate, today)) break;
         occurrences.push(nextDate);
+        count++;
       }
 
       if (occurrences.length > 0) {
@@ -127,49 +132,57 @@ export const useStore = create<AppState>((set, get) => ({
       }
     });
 
-    if (newTransactions.length > 0) {
+    if (newTransactions.length > 0 || updatedRecurring.length > 0) {
       const db = dbService.getDb();
 
-      // Save new transactions
-      newTransactions.forEach((tx) => {
-        const stmt = db.prepareSync(
-          "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        );
-        stmt.executeSync([
-          tx.id,
-          tx.amount,
-          tx.type,
-          tx.categoryId,
-          tx.categoryName,
-          tx.title,
-          tx.note,
-          tx.location,
-          tx.withPerson,
-          tx.date,
-          tx.createdAt,
-          tx.updatedAt,
-        ]);
-        stmt.finalizeSync();
-      });
+      try {
+        // Save new transactions
+        if (newTransactions.length > 0) {
+          const insertStmt = db.prepareSync(
+            "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          );
+          newTransactions.forEach((tx) => {
+            insertStmt.executeSync([
+              tx.id,
+              tx.amount,
+              tx.type,
+              tx.categoryId,
+              tx.categoryName,
+              tx.title,
+              tx.note,
+              tx.location,
+              tx.withPerson,
+              tx.date,
+              tx.createdAt,
+              tx.updatedAt,
+            ]);
+          });
+          insertStmt.finalizeSync();
+        }
 
-      // Update recurring transactions state
-      updatedRecurring.forEach((rt) => {
-        const stmt = db.prepareSync(
-          "UPDATE recurring_transactions SET lastGeneratedDate=?, updatedAt=? WHERE id=?",
-        );
-        stmt.executeSync([rt.lastGeneratedDate, rt.updatedAt, rt.id]);
-        stmt.finalizeSync();
-      });
+        // Update recurring transactions state
+        if (updatedRecurring.length > 0) {
+          const updateStmt = db.prepareSync(
+            "UPDATE recurring_transactions SET lastGeneratedDate=?, updatedAt=? WHERE id=?",
+          );
+          updatedRecurring.forEach((rt) => {
+            updateStmt.executeSync([rt.lastGeneratedDate, rt.updatedAt, rt.id]);
+          });
+          updateStmt.finalizeSync();
+        }
 
-      // Update store
-      set((state) => ({
-        transactions: [...newTransactions, ...state.transactions].sort(
-          (a, b) => b.date - a.date,
-        ),
-        recurringTransactions: state.recurringTransactions.map(
-          (rt) => updatedRecurring.find((u) => u.id === rt.id) || rt,
-        ),
-      }));
+        // Update store
+        set((state) => ({
+          transactions: [...newTransactions, ...state.transactions].sort(
+            (a, b) => b.date - a.date,
+          ),
+          recurringTransactions: state.recurringTransactions.map(
+            (rt) => updatedRecurring.find((u) => u.id === rt.id) || rt,
+          ),
+        }));
+      } catch (err) {
+        console.error("Error processing recurring transactions:", err);
+      }
     }
   },
 

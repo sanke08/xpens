@@ -357,6 +357,12 @@ export default function TransactionScreen() {
             </View>
           </View>
         )}
+
+        <EGBlock
+          inputText={inputText}
+          categories={categories}
+          transactions={transactions}
+        />
       </ScrollView>
 
       <View style={styles.footer}>
@@ -377,11 +383,6 @@ export default function TransactionScreen() {
             setNewCatType(type);
             setCreateCatModalVisible(true);
           }}
-        />
-        <EGBlock
-          inputText={inputText}
-          categories={categories}
-          transactions={transactions}
         />
         <TouchableOpacity
           style={[
@@ -529,7 +530,7 @@ const styles = StyleSheet.create({
   },
   toggleBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: "center",
     borderRadius: 8,
   },
@@ -545,7 +546,7 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
   },
   smartInput: {
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 16,
@@ -568,7 +569,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   recurringLabel: {
-    fontSize: 15,
     fontWeight: "600",
     color: COLORS.muted,
   },
@@ -590,19 +590,18 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 20,
     paddingHorizontal: 4,
+    backgroundColor: COLORS.border,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   intervalChip: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: COLORS.active,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   intervalChipActive: {
-    backgroundColor: COLORS.text,
-    borderColor: COLORS.text,
+    backgroundColor: COLORS.card,
   },
   intervalText: {
     fontSize: 13,
@@ -610,10 +609,10 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
   },
   intervalTextActive: {
-    color: COLORS.background,
+    color: COLORS.white,
   },
   hintText: {
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.muted,
   },
   expandBtn: {
@@ -624,8 +623,7 @@ const styles = StyleSheet.create({
   expandText: {
     color: COLORS.muted,
     marginRight: 4,
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 12,
   },
   detailsArea: {},
   catsList: {
@@ -658,9 +656,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginBottom: 12,
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.text,
   },
   rowInputs: {
@@ -670,12 +668,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: Platform.OS === "ios" ? 40 : 24,
     backgroundColor: COLORS.background,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
     gap: 16,
   },
   saveBtn: {
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 16,
     alignItems: "center",
   },

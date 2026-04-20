@@ -1,5 +1,4 @@
 import { TransactionRow } from "@/src/components/TransactionRow";
-import { Sparkles } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../../../theme/colors";
@@ -37,45 +36,30 @@ export const EGBlock: React.FC<EGBlockProps> = ({
 
   return (
     <View style={styles.smartInputContainer}>
-      <View style={styles.smartInputTip}>
-        <Sparkles size={16} color={COLORS.muted} style={styles.tipIcon} />
-        <Text style={styles.tipText}>
-          <Text style={{ color: COLORS.text, fontWeight: "600" }}>
-            Smart Input:{"  "}
-          </Text>
-          <Text style={{ fontStyle: "italic", color: COLORS.text }}>
-            {isTyping
-              ? `Input : "${inputText}"`
-              : `Example : "200 pizza with john"`}
-          </Text>
-        </Text>
-      </View>
-      <View style={styles.previewWrapper}>
-        <Text style={styles.previewLabel}>List Preview</Text>
-        <View pointerEvents="none">
-          <TransactionRow
-            transaction={
-              {
-                id: "preview",
-                amount: amount,
-                type: type,
-                categoryId: suggestedCat?.id || "preview-cat",
-                categoryName: categoryName,
-                note: note,
-                date: Date.now(),
-              } as any
+      <Text style={styles.previewLabel}>List Preview</Text>
+      <View pointerEvents="none">
+        <TransactionRow
+          transaction={
+            {
+              id: "preview",
+              amount: amount,
+              type: type,
+              categoryId: suggestedCat?.id || "preview-cat",
+              categoryName: categoryName,
+              note: note,
+              date: Date.now(),
+            } as any
+          }
+          category={
+            suggestedCat || {
+              id: "preview-cat",
+              name: categoryName,
+              icon: categoryIcon,
+              type: type as any,
+              createdAt: Date.now(),
             }
-            category={
-              suggestedCat || {
-                id: "preview-cat",
-                name: categoryName,
-                icon: categoryIcon,
-                type: type as any,
-                createdAt: Date.now(),
-              }
-            }
-          />
-        </View>
+          }
+        />
       </View>
     </View>
   );
@@ -86,24 +70,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
-    // overflow: "hidden",
     paddingHorizontal: 12,
-  },
-  smartInputTip: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  previewWrapper: {
-    backgroundColor: COLORS.background,
-    paddingBottom: 4,
-    gap: 8,
+    paddingVertical: 6,
   },
   previewLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: COLORS.muted,
     textTransform: "uppercase",

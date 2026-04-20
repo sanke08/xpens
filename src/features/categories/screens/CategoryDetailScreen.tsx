@@ -90,32 +90,15 @@ export default function CategoryDetailScreen() {
         <Text style={styles.headerTitle}>{category.name}</Text>
       </View>
 
-      <View style={styles.summaryCard}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: isIncome ? COLORS.successBg : COLORS.active },
-          ]}
-        >
-          <IconComponent
-            size={32}
-            color={isIncome ? COLORS.success : COLORS.text}
-          />
-        </View>
-        <Text style={styles.summaryLabel}>
-          Total {isIncome ? "Income" : "Spent"}
-        </Text>
-        <Text
-          style={[
-            styles.summaryAmount,
-            { color: isIncome ? COLORS.success : COLORS.text },
-          ]}
-        >
-          {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
-        </Text>
-      </View>
-
       <SectionList
+        ItemSeparatorComponent={() => (
+          <View
+            style={{
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderColor: COLORS.border,
+            }}
+          />
+        )}
         sections={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -133,6 +116,35 @@ export default function CategoryDetailScreen() {
             />
           </SwipeableRow>
         )}
+        ListHeaderComponent={() => (
+          <View style={styles.summaryCard}>
+            <View
+              style={[
+                styles.iconContainer,
+                {
+                  backgroundColor: isIncome ? COLORS.successBg : COLORS.active,
+                },
+              ]}
+            >
+              <IconComponent
+                size={28}
+                color={isIncome ? COLORS.success : COLORS.text}
+              />
+            </View>
+            <Text style={styles.summaryLabel}>
+              Total {isIncome ? "Income" : "Spent"}
+            </Text>
+            <Text
+              style={[
+                styles.summaryAmount,
+                { color: isIncome ? COLORS.success : COLORS.text },
+              ]}
+            >
+              {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
+            </Text>
+          </View>
+        )}
+        invertStickyHeaders
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{title}</Text>
@@ -145,7 +157,7 @@ export default function CategoryDetailScreen() {
             </Text>
           </View>
         }
-        stickySectionHeadersEnabled={false}
+        // stickySectionHeadersEnabled={false}
         contentContainerStyle={styles.listContent}
       />
     </View>
@@ -173,35 +185,29 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     alignItems: "center",
-    paddingVertical: 40,
-    backgroundColor: COLORS.background,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    paddingVertical: 20,
   },
   iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 4,
   },
   summaryLabel: {
     fontSize: 14,
     color: COLORS.muted,
     fontWeight: "600",
-    marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   summaryAmount: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: "800",
     letterSpacing: -1,
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   sectionTitle: {
