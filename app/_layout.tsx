@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { dbService } from "../src/services/DatabaseService";
 import { useStore } from "../src/store/useStore";
@@ -37,7 +38,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
         style={{
           flex: 1,
@@ -66,6 +67,6 @@ export default function RootLayout() {
           <Stack.Screen name="transactions" />
         </Stack>
       </SafeAreaView>
-    </>
+    </GestureHandlerRootView>
   );
 }

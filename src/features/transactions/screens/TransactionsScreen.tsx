@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
@@ -22,7 +23,7 @@ import { Transaction } from "../../../types";
  */
 export default function TransactionsScreen() {
   const router = useRouter();
-  const { transactions, categories } = useStore();
+  const { transactions, categories, deleteTransaction } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
@@ -124,16 +125,18 @@ export default function TransactionsScreen() {
         sections={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TransactionRow
-            transaction={item}
-            category={getCategory(item.categoryId)}
-            onPress={() =>
-              router.push({
-                pathname: "/transaction",
-                params: { id: item.id },
-              } as any)
-            }
-          />
+          <SwipeableRow onDelete={() => deleteTransaction(item.id)}>
+            <TransactionRow
+              transaction={item}
+              category={getCategory(item.categoryId)}
+              onPress={() =>
+                router.push({
+                  pathname: "/transaction",
+                  params: { id: item.id },
+                } as any)
+              }
+            />
+          </SwipeableRow>
         )}
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeader}>
