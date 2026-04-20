@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingTop: 16,
-    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+    paddingBottom: Platform.OS === "ios" ? 24 : 16,
     backgroundColor: COLORS.background,
     gap: 16,
   },

@@ -75,17 +75,6 @@ export default function DashboardScreen() {
       >
         <BalanceCard transactions={transactions} />
 
-        <TouchableOpacity
-          style={styles.quickAddButton}
-          activeOpacity={0.8}
-          onPress={() => router.push("/transaction")}
-        >
-          <View style={styles.quickAddContent}>
-            <Plus size={24} color={COLORS.background} />
-            <Text style={styles.quickAddText}>Add Transaction</Text>
-          </View>
-        </TouchableOpacity>
-
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Categories</Text>
           <TouchableOpacity
@@ -118,6 +107,16 @@ export default function DashboardScreen() {
           )}
         </View>
       </ScrollView>
+      <TouchableOpacity
+        style={styles.quickAddButton}
+        activeOpacity={0.8}
+        onPress={() => router.push("/transaction")}
+      >
+        <View style={styles.quickAddContent}>
+          <Plus size={24} color={COLORS.background} />
+          <Text style={styles.quickAddText}>Add Transaction</Text>
+        </View>
+      </TouchableOpacity>
     </>
   );
 }
@@ -154,6 +153,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingVertical: 16,
+    marginBottom: 16,
   },
   quickAddContent: {
     flexDirection: "row",

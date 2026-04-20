@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: COLORS.white,
     borderRadius: 12,
+    marginBottom: 16,
   },
   addBtnIcon: {
     width: 32,
@@ -208,6 +209,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,
