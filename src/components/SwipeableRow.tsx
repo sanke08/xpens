@@ -1,5 +1,8 @@
+import * as Haptics from "expo-haptics";
+import { Trash2 } from "lucide-react-native";
 import React, { useCallback } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { RectButton } from "react-native-gesture-handler";
 import ReanimatedSwipeable, {
   SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -7,10 +10,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { Trash2 } from "lucide-react-native";
 import { COLORS } from "../theme/colors";
-import * as Haptics from "expo-haptics";
-import { RectButton } from "react-native-gesture-handler";
 
 interface SwipeableRowProps {
   children: React.ReactNode;
@@ -33,7 +33,7 @@ function RightAction({
   return (
     <RectButton style={styles.deleteAction} onPress={onPress}>
       <Animated.View style={[styles.deleteIconContainer, styleAnimation]}>
-        <Trash2 color={COLORS.background} size={22} />
+        <Trash2 color={COLORS.muted} size={18} />
         <Text style={styles.deleteText}>Delete</Text>
       </Animated.View>
     </RectButton>
@@ -61,9 +61,9 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
     <ReanimatedSwipeable
       renderRightActions={renderRightActions}
       friction={2}
-      containerStyle={styles.swipeableContainer}
       rightThreshold={40}
       enableTrackpadTwoFingerGesture
+      childrenContainerStyle={{ paddingVertical: 6 }}
     >
       {children}
     </ReanimatedSwipeable>
@@ -71,22 +71,22 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
 }
 
 const styles = StyleSheet.create({
-  swipeableContainer: {
-    backgroundColor: COLORS.danger,
-  },
   deleteAction: {
     width: 100,
-    backgroundColor: COLORS.danger,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   deleteIconContainer: {
+    backgroundColor: COLORS.card,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    width: 100,
+    width: 90,
+    height: "100%",
   },
   deleteText: {
-    color: COLORS.background,
+    color: COLORS.danger,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 4,
