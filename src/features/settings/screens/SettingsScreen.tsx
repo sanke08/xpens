@@ -28,7 +28,10 @@ export default function SettingsScreen() {
     };
     const json = JSON.stringify(data, null, 2);
     // Real-world implementation would use Expo FileSystem or Share API
-    Alert.alert("Export Ready", `Data size: ${json.length} bytes\n(JSON generated)`);
+    Alert.alert(
+      "Export Ready",
+      `Data size: ${json.length} bytes\n(JSON generated)`,
+    );
   };
 
   const handleClearData = () => {

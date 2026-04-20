@@ -2,14 +2,14 @@ export interface Category {
   id: string;
   name: string;
   icon: string;
-  type: 'expense' | 'income';
+  type: "expense" | "income";
   createdAt: number;
 }
 
 export interface Transaction {
   id: string;
   amount: number;
-  type: 'income' | 'expense';
+  type: "income" | "expense";
   categoryId: string | null;
   categoryName: string | null;
   title: string | null;
