@@ -65,6 +65,7 @@ export default function RootLayout() {
           <Stack.Screen name="categories" />
           <Stack.Screen name="category/[id]" />
           <Stack.Screen name="transactions" />
+          <Stack.Screen name="recurring/index" />
         </Stack>
       </SafeAreaView>
     </GestureHandlerRootView>

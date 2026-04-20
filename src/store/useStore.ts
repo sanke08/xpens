@@ -2,11 +2,13 @@ import { create } from "zustand";
 import { generateId } from "../utils/id";
 import { dbService } from "../services/DatabaseService";
 import { defaultCategories } from "../features/categories/categoryKeywords";
-import { Category, Transaction } from "../types";
+import { Category, RecurringTransaction, Transaction } from "../types";
+import { addDays, addMonths, addWeeks, isAfter, startOfDay } from "date-fns";
 
 interface AppState {
   categories: Category[];
   transactions: Transaction[];
+  recurringTransactions: RecurringTransaction[];
   isLoaded: boolean;
   loadData: () => void;
   addTransaction: (
@@ -14,6 +16,18 @@ interface AppState {
   ) => void;
   updateTransaction: (id: string, t: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
+  addRecurringTransaction: (
+    t: Omit<
+      RecurringTransaction,
+      "id" | "createdAt" | "updatedAt" | "lastGeneratedDate" | "isActive"
+    >,
+  ) => void;
+  updateRecurringTransaction: (
+    id: string,
+    t: Partial<RecurringTransaction>,
+  ) => void;
+  deleteRecurringTransaction: (id: string) => void;
+  processRecurringTransactions: () => void;
   addCategory: (c: Omit<Category, "id" | "createdAt">) => void;
   updateCategory: (id: string, c: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
@@ -22,6 +36,7 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   categories: [],
   transactions: [],
+  recurringTransactions: [],
   isLoaded: false,
 
   loadData: () => {
@@ -33,16 +48,128 @@ export const useStore = create<AppState>((set, get) => ({
       const txs = db.getAllSync<Transaction>(
         "SELECT * FROM transactions ORDER BY date DESC;",
       );
+      const recurringTxs = db.getAllSync<RecurringTransaction>(
+        "SELECT * FROM recurring_transactions ORDER BY createdAt DESC;",
+      );
 
       const uniqueCats = new Map<string, Category>();
       defaultCategories.forEach((c) => uniqueCats.set(c.name.toLowerCase(), c));
       catsDb.forEach((c) => uniqueCats.set(c.name.toLowerCase(), c));
       const allCats = Array.from(uniqueCats.values());
 
-      set({ categories: allCats, transactions: txs, isLoaded: true });
+      set({
+        categories: allCats,
+        transactions: txs,
+        recurringTransactions: recurringTxs,
+        isLoaded: true,
+      });
+
+      // After loading, process automated recurring transactions
+      get().processRecurringTransactions();
     } catch (e) {
       console.error("Error loading data", e);
       set({ isLoaded: true });
+    }
+  },
+
+  processRecurringTransactions: () => {
+    const { recurringTransactions, transactions } = get();
+    const now = Date.now();
+    const today = startOfDay(now).getTime();
+
+    let newTransactions: Transaction[] = [];
+    let updatedRecurring: RecurringTransaction[] = [];
+
+    recurringTransactions.forEach((rt) => {
+      if (!rt.isActive) return;
+
+      let lastDate = rt.lastGeneratedDate || rt.startDate;
+      let nextDate = lastDate;
+
+      // Calculate next occurrences
+      const occurrences: number[] = [];
+      while (true) {
+        if (rt.interval === "daily") nextDate = addDays(nextDate, 1).getTime();
+        else if (rt.interval === "weekly")
+          nextDate = addWeeks(nextDate, 1).getTime();
+        else if (rt.interval === "monthly")
+          nextDate = addMonths(nextDate, 1).getTime();
+
+        if (isAfter(nextDate, today)) break;
+        occurrences.push(nextDate);
+      }
+
+      if (occurrences.length > 0) {
+        occurrences.forEach((date) => {
+          const newTx: Transaction = {
+            id: generateId(),
+            amount: rt.amount,
+            type: rt.type,
+            categoryId: rt.categoryId,
+            categoryName: rt.categoryName,
+            title: rt.title,
+            note: rt.note,
+            location: rt.location,
+            withPerson: rt.withPerson,
+            date: date,
+            createdAt: now,
+            updatedAt: now,
+          };
+          newTransactions.push(newTx);
+        });
+
+        const updatedRt = {
+          ...rt,
+          lastGeneratedDate: occurrences[occurrences.length - 1],
+          updatedAt: now,
+        };
+        updatedRecurring.push(updatedRt);
+      }
+    });
+
+    if (newTransactions.length > 0) {
+      const db = dbService.getDb();
+
+      // Save new transactions
+      newTransactions.forEach((tx) => {
+        const stmt = db.prepareSync(
+          "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        );
+        stmt.executeSync([
+          tx.id,
+          tx.amount,
+          tx.type,
+          tx.categoryId,
+          tx.categoryName,
+          tx.title,
+          tx.note,
+          tx.location,
+          tx.withPerson,
+          tx.date,
+          tx.createdAt,
+          tx.updatedAt,
+        ]);
+        stmt.finalizeSync();
+      });
+
+      // Update recurring transactions state
+      updatedRecurring.forEach((rt) => {
+        const stmt = db.prepareSync(
+          "UPDATE recurring_transactions SET lastGeneratedDate=?, updatedAt=? WHERE id=?",
+        );
+        stmt.executeSync([rt.lastGeneratedDate, rt.updatedAt, rt.id]);
+        stmt.finalizeSync();
+      });
+
+      // Update store
+      set((state) => ({
+        transactions: [...newTransactions, ...state.transactions].sort(
+          (a, b) => b.date - a.date,
+        ),
+        recurringTransactions: state.recurringTransactions.map(
+          (rt) => updatedRecurring.find((u) => u.id === rt.id) || rt,
+        ),
+      }));
     }
   },
 
@@ -51,10 +178,8 @@ export const useStore = create<AppState>((set, get) => ({
     const now = Date.now();
     const tx: Transaction = { ...txData, id, createdAt: now, updatedAt: now };
 
-    // Optimistic UI
     set((state) => ({ transactions: [tx, ...state.transactions] }));
 
-    // Save to DB
     const db = dbService.getDb();
     const stmt = db.prepareSync(
       "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -77,14 +202,12 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateTransaction: (id, updates) => {
-    // We update UI first
     set((state) => ({
       transactions: state.transactions.map((t) =>
         t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t,
       ),
     }));
 
-    // Re-fetch all and update DB
     const tx = get().transactions.find((t) => t.id === id);
     if (!tx) return;
 
@@ -114,6 +237,90 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     const db = dbService.getDb();
     db.runSync("DELETE FROM transactions WHERE id = ?", id);
+  },
+
+  addRecurringTransaction: (rtData) => {
+    const id = generateId();
+    const now = Date.now();
+    const rt: RecurringTransaction = {
+      ...rtData,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      lastGeneratedDate: null,
+      isActive: true,
+    };
+
+    set((state) => ({
+      recurringTransactions: [rt, ...state.recurringTransactions],
+    }));
+
+    const db = dbService.getDb();
+    const stmt = db.prepareSync(
+      "INSERT INTO recurring_transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, interval, startDate, lastGeneratedDate, isActive, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    stmt.executeSync([
+      rt.id,
+      rt.amount,
+      rt.type,
+      rt.categoryId,
+      rt.categoryName,
+      rt.title,
+      rt.note,
+      rt.location,
+      rt.withPerson,
+      rt.interval,
+      rt.startDate,
+      rt.lastGeneratedDate,
+      rt.isActive ? 1 : 0,
+      rt.createdAt,
+      rt.updatedAt,
+    ]);
+    stmt.finalizeSync();
+
+    get().processRecurringTransactions();
+  },
+
+  updateRecurringTransaction: (id, updates) => {
+    set((state) => ({
+      recurringTransactions: state.recurringTransactions.map((rt) =>
+        rt.id === id ? { ...rt, ...updates, updatedAt: Date.now() } : rt,
+      ),
+    }));
+
+    const rt = get().recurringTransactions.find((t) => t.id === id);
+    if (!rt) return;
+
+    const db = dbService.getDb();
+    const stmt = db.prepareSync(
+      "UPDATE recurring_transactions SET amount=?, type=?, categoryId=?, categoryName=?, title=?, note=?, location=?, withPerson=?, interval=?, startDate=?, isActive=?, updatedAt=? WHERE id=?",
+    );
+    stmt.executeSync([
+      rt.amount,
+      rt.type,
+      rt.categoryId,
+      rt.categoryName,
+      rt.title,
+      rt.note,
+      rt.location,
+      rt.withPerson,
+      rt.interval,
+      rt.startDate,
+      rt.isActive ? 1 : 0,
+      rt.updatedAt,
+      rt.id,
+    ]);
+    stmt.finalizeSync();
+  },
+
+  deleteRecurringTransaction: (id) => {
+    set((state) => ({
+      recurringTransactions: state.recurringTransactions.filter(
+        (t) => t.id !== id,
+      ),
+    }));
+    const db = dbService.getDb();
+    db.runSync("DELETE FROM recurring_transactions WHERE id = ?", id);
   },
 
   addCategory: (catData) => {

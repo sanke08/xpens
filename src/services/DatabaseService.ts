@@ -49,6 +49,24 @@ class DatabaseService {
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS recurring_transactions (
+        id TEXT PRIMARY KEY NOT NULL,
+        amount REAL NOT NULL,
+        type TEXT NOT NULL,
+        categoryId TEXT,
+        categoryName TEXT,
+        title TEXT,
+        note TEXT,
+        location TEXT,
+        withPerson TEXT,
+        interval TEXT NOT NULL,
+        startDate INTEGER NOT NULL,
+        lastGeneratedDate INTEGER,
+        isActive INTEGER NOT NULL DEFAULT 1,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
     `);
 
     // Seed default categories if empty

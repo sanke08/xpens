@@ -16,7 +16,7 @@ import {
 
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
-import { Category } from "../../../types";
+import { Category, RecurrenceInterval } from "../../../types";
 import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
@@ -34,6 +34,7 @@ export default function TransactionScreen() {
   const {
     addTransaction,
     updateTransaction,
+    addRecurringTransaction,
     transactions,
     categories,
     addCategory,
@@ -54,6 +55,10 @@ export default function TransactionScreen() {
   const [note, setNote] = useState("");
   const [location, setLocation] = useState("");
   const [withPerson, setWithPerson] = useState("");
+
+  // Recurring state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [interval, setInterval] = useState<RecurrenceInterval>("monthly");
 
   const [hasInit, setHasInit] = useState(false);
   const textInputRef = useRef<TextInput>(null);
@@ -140,6 +145,12 @@ export default function TransactionScreen() {
 
     if (existingTx) {
       updateTransaction(existingTx.id, payload);
+    } else if (isRecurring) {
+      addRecurringTransaction({
+        ...payload,
+        interval: interval,
+        startDate: Date.now(),
+      });
     } else {
       addTransaction({
         ...payload,
@@ -208,6 +219,52 @@ export default function TransactionScreen() {
           onSubmitEditing={handleSave}
           multiline
         />
+
+        <View style={styles.recurringToggleRow}>
+          <Text style={styles.recurringLabel}>Automate this expense?</Text>
+          <TouchableOpacity
+            style={[
+              styles.switchTrack,
+              isRecurring && { backgroundColor: COLORS.successBg },
+            ]}
+            onPress={() => setIsRecurring(!isRecurring)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.switchThumb,
+                isRecurring && {
+                  transform: [{ translateX: 20 }],
+                  backgroundColor: COLORS.success,
+                },
+              ]}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {isRecurring && (
+          <View style={styles.intervalPicker}>
+            {(["daily", "weekly", "monthly"] as const).map((i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.intervalChip,
+                  interval === i && styles.intervalChipActive,
+                ]}
+                onPress={() => setInterval(i)}
+              >
+                <Text
+                  style={[
+                    styles.intervalText,
+                    interval === i && styles.intervalTextActive,
+                  ]}
+                >
+                  {i.charAt(0).toUpperCase() + i.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.hintArea}>
           {showDetails ? (
@@ -501,7 +558,59 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 8,
+    marginBottom: 8,
+  },
+  recurringToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  recurringLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.muted,
+  },
+  switchTrack: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.border,
+    padding: 2,
+  },
+  switchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.muted,
+  },
+  intervalPicker: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  intervalChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: COLORS.active,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  intervalChipActive: {
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
+  },
+  intervalText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.muted,
+  },
+  intervalTextActive: {
+    color: COLORS.background,
   },
   hintText: {
     fontSize: 15,

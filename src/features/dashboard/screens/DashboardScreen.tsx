@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ChevronRight, Plus } from "lucide-react-native";
+import { ChevronRight, Clock, Plus } from "lucide-react-native";
 import React, { useMemo } from "react";
 import {
   ScrollView,
@@ -53,9 +53,20 @@ export default function DashboardScreen() {
     <>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Rxpense</Text>
-        <TouchableOpacity onPress={() => router.push("/settings")}>
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => router.push("/recurring" as any)}
+            style={styles.headerIconBtn}
+          >
+            <Clock size={22} color={COLORS.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/settings")}
+            style={styles.headerIconBtn}
+          >
+            <Text style={styles.settingsIcon}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -117,6 +128,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  headerIconBtn: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 24,
