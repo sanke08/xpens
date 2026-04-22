@@ -33,7 +33,9 @@ type FlatListItem =
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { transactions, categories, deleteTransaction } = useStore();
+  const transactions = useStore((state) => state.transactions);
+  const categories = useStore((state) => state.categories);
+  const deleteTransaction = useStore((state) => state.deleteTransaction);
 
   const category = categories.find((c) => c.id === id);
 

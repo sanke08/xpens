@@ -38,14 +38,14 @@ import { EGBlock } from "../components/EGBlock";
 export default function TransactionScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const {
-    addTransaction,
-    updateTransaction,
-    addRecurringTransaction,
-    transactions,
-    categories,
-    addCategory,
-  } = useStore();
+  const addTransaction = useStore((state) => state.addTransaction);
+  const updateTransaction = useStore((state) => state.updateTransaction);
+  const addRecurringTransaction = useStore(
+    (state) => state.addRecurringTransaction,
+  );
+  const transactions = useStore((state) => state.transactions);
+  const categories = useStore((state) => state.categories);
+  const addCategory = useStore((state) => state.addCategory);
 
   const existingTx =
     typeof id === "string" ? transactions.find((t) => t.id === id) : undefined;

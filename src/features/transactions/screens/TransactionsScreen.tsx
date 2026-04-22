@@ -33,7 +33,9 @@ type FlatListItem =
  */
 export default function TransactionsScreen() {
   const router = useRouter();
-  const { transactions, categories, deleteTransaction } = useStore();
+  const transactions = useStore((state) => state.transactions);
+  const categories = useStore((state) => state.categories);
+  const deleteTransaction = useStore((state) => state.deleteTransaction);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(

@@ -73,6 +73,14 @@ class DatabaseService {
       );
     `);
 
+    // Performance Indices
+    this.db.execSync(`
+      CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
+      CREATE INDEX IF NOT EXISTS idx_transactions_categoryId ON transactions(categoryId);
+      CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+      CREATE INDEX IF NOT EXISTS idx_recurring_isActive ON recurring_transactions(isActive);
+    `);
+
     // Seed default categories if empty
     const row = this.db.getFirstSync<{ count: number }>(
       "SELECT COUNT(*) as count FROM categories;",

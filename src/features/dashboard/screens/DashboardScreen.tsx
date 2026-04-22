@@ -24,8 +24,11 @@ import { Category } from "../../../types";
  */
 export default function DashboardScreen() {
   const router = useRouter();
-  const { categories, transactions, addTransactions, clearAllTransactions } =
-    useStore();
+  const categories = useStore((state) => state.categories);
+  const transactions = useStore((state) => state.transactions);
+  const addTransactions = useStore((state) => state.addTransactions);
+  const clearAllTransactions = useStore((state) => state.clearAllTransactions);
+
   const { bottom } = useSafeAreaInsets();
   const [animationKey, setAnimationKey] = React.useState(0);
 
