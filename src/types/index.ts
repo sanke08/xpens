@@ -19,6 +19,7 @@ export interface Transaction {
   date: number;
   createdAt: number;
   updatedAt: number;
+  searchText?: string;
 }
 
 export type RecurrenceInterval = "daily" | "weekly" | "monthly";

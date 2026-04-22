@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import { FlatList, FlatListProps, Platform, ViewStyle } from "react-native";
 import Animated, {
   ComplexAnimationBuilder,
@@ -13,7 +13,7 @@ interface XpensListProps<T> extends Omit<FlatListProps<T>, "renderItem"> {
    * The render function for items.
    * Note: The item is automatically wrapped in an Animated.View with layout transitions.
    */
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem: (info: { item: T; index: number }) => ReactNode;
   /**
    * Animation used when an item is removed from the list.
    * Defaults to FadeOutUp.
@@ -33,36 +33,67 @@ interface XpensListProps<T> extends Omit<FlatListProps<T>, "renderItem"> {
    * Optional style for the Animated.View wrapper.
    */
   wrapperStyle?: ViewStyle;
+  /**
+   * Optional function to calculate item layout (prevents dynamic measurement lag).
+   */
+  getItemLayout?: (
+    data: ArrayLike<T> | null | undefined,
+    index: number,
+  ) => { length: number; offset: number; index: number };
+}
+
+/**
+ * XpensListInner - Internal implementation to preserve generics.
+ */
+function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
+  const {
+    renderItem,
+    wrapperStyle = { flex: 1 },
+    itemExiting = FadeOutUp.duration(200),
+    itemEntering = FadeInDown,
+    itemLayout = LinearTransition,
+    ...flatListProps
+  } = props;
+
+  const stableRenderItem = React.useCallback(
+    ({ item, index }: { item: T; index: number }) => {
+      let enteringAnimation = itemEntering;
+      if (typeof enteringAnimation !== "function" && index < 15) {
+        enteringAnimation = (enteringAnimation as any).delay(index * 50);
+      }
+
+      return (
+        <Animated.View
+          key={item.id}
+          layout={itemLayout}
+          exiting={itemExiting}
+          entering={enteringAnimation}
+        >
+          {renderItem({ item, index })}
+        </Animated.View>
+      );
+    },
+    [renderItem, itemEntering, itemLayout, itemExiting],
+  );
+
+  return (
+    <Animated.View style={wrapperStyle}>
+      <FlatList
+        {...flatListProps}
+        // Performance defaults
+        removeClippedSubviews={Platform.OS === "android"}
+        initialNumToRender={10}
+        maxToRenderPerBatch={20}
+        windowSize={21}
+        showsVerticalScrollIndicator={false}
+        renderItem={stableRenderItem}
+      />
+    </Animated.View>
+  );
 }
 
 /**
  * XpensList - A performance-optimized, animated FlatList wrapper.
  * Centralizes Reanimated layout transitions and best-practice FlatList props.
  */
-export function XpensList<T extends { id: string }>(props: XpensListProps<T>) {
-  const { renderItem, wrapperStyle = { flex: 1 }, ...flatListProps } = props;
-
-  return (
-    <Animated.View style={wrapperStyle} layout={LinearTransition}>
-      <FlatList
-        {...flatListProps}
-        // Performance defaults
-        removeClippedSubviews={Platform.OS === "android"}
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <Animated.View
-            key={item.id}
-            layout={LinearTransition}
-            exiting={FadeOutUp.duration(200)}
-            entering={FadeInDown.delay(index * 50)}
-          >
-            {renderItem(item, index)}
-          </Animated.View>
-        )}
-      />
-    </Animated.View>
-  );
-}
+export const XpensList = React.memo(XpensListInner) as typeof XpensListInner;

@@ -28,88 +28,108 @@ export default function TransactionsScreen() {
   const deleteTransaction = useStore((state) => state.deleteTransaction);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [deferredSearch, setDeferredSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
     "all",
   );
 
-  const filteredData = useMemo(() => {
-    let filtered = transactions;
+  // Debounce search query to reduce JS thread pressure
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDeferredSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-    if (filterType !== "all") {
-      filtered = filtered.filter((t) => t.type === filterType);
-    }
+  const { filteredData, offsets } = useMemo(() => {
+    const q = deferredSearch.toLowerCase().trim();
+    const flatList: FlatListItem[] = [];
+    const itemOffsets: number[] = [];
+    let currentOffset = 0;
+    let lastDayKey = "";
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.categoryName?.toLowerCase().includes(q) ||
-          t.title?.toLowerCase().includes(q) ||
-          t.note?.toLowerCase().includes(q) ||
-          t.location?.toLowerCase().includes(q) ||
-          t.withPerson?.toLowerCase().includes(q),
-      );
-    }
+    const ROW_HEIGHT = 72;
+    const HEADER_HEIGHT = 40;
 
-    const grouped: { [key: string]: Transaction[] } = {};
-    filtered.forEach((t) => {
+    for (const t of transactions) {
+      if (filterType !== "all" && t.type !== filterType) continue;
+
+      if (q) {
+        if (!t.searchText?.includes(q)) continue;
+      }
+
       const d = new Date(t.date);
       d.setHours(0, 0, 0, 0);
-      const key = d.getTime().toString();
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(t);
-    });
+      const dayKey = d.getTime().toString();
 
-    const flatList: FlatListItem[] = [];
-    Object.keys(grouped)
-      .sort((a, b) => Number(b) - Number(a))
-      .forEach((key) => {
-        const timestamp = Number(key);
+      if (dayKey !== lastDayKey) {
+        lastDayKey = dayKey;
+        const timestamp = Number(dayKey);
         let title = format(timestamp, "MMM dd, yyyy");
         if (isToday(timestamp)) title = "Today";
         else if (isYesterday(timestamp)) title = "Yesterday";
 
-        flatList.push({ type: "header", title, id: `header-${key}` });
-        grouped[key].forEach((t) => {
-          flatList.push({ type: "transaction", transaction: t, id: t.id });
-        });
-      });
+        flatList.push({ type: "header", title, id: `header-${dayKey}` });
+        itemOffsets.push(currentOffset);
+        currentOffset += HEADER_HEIGHT;
+      }
 
-    return flatList;
-  }, [transactions, searchQuery, filterType]);
+      flatList.push({ type: "transaction", transaction: t, id: t.id });
+      itemOffsets.push(currentOffset);
+      currentOffset += ROW_HEIGHT;
+    }
 
-  const getCategory = useCallback(
-    (id?: string | null) => categories.find((c) => c.id === id),
-    [categories],
+    return { filteredData: flatList, offsets: itemOffsets };
+  }, [transactions, deferredSearch, filterType]);
+
+  // Optimized O(1) category lookup map
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, (typeof categories)[0]>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
+  const getItemLayout = useCallback(
+    (data: any, index: number) => {
+      const ROW_HEIGHT = 72;
+      const HEADER_HEIGHT = 40;
+      const isHeader = data[index]?.type === "header";
+
+      return {
+        length: isHeader ? HEADER_HEIGHT : ROW_HEIGHT,
+        offset: offsets[index] || 0,
+        index,
+      };
+    },
+    [offsets],
   );
 
   const renderItem = useCallback(
-    (item: FlatListItem) => {
+    ({ item }: { item: FlatListItem }) => {
       if (item.type === "header") {
         return (
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, { height: 40 }]}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
           </View>
         );
       }
 
       const { transaction } = item;
+      const category = transaction.categoryId
+        ? categoryMap.get(transaction.categoryId)
+        : undefined;
+
       return (
         <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
           <TransactionRow
             transaction={transaction}
-            category={getCategory(transaction.categoryId)}
+            category={category}
             onPress={() =>
-              router.push({
-                pathname: "/transaction",
-                params: { id: transaction.id },
-              } as any)
+              router.push(`/transaction?id=${transaction.id}` as any)
             }
           />
         </SwipeableRow>
       );
     },
-    [deleteTransaction, getCategory, router],
+    [deleteTransaction, router],
   );
 
   return (
@@ -153,6 +173,7 @@ export default function TransactionsScreen() {
         data={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        getItemLayout={getItemLayout}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No transactions found</Text>

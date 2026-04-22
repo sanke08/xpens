@@ -26,40 +26,64 @@ export default function CategoryDetailScreen() {
 
   const category = categories.find((c) => c.id === id);
 
-  const { filteredData, totalAmount } = useMemo(() => {
+  const { filteredData, totalAmount, offsets } = useMemo(() => {
     let total = 0;
-    const catTxs = transactions.filter((t) => t.categoryId === id);
+    const flatList: FlatListItem[] = [];
+    const itemOffsets: number[] = [];
+    let currentOffset = 0;
+    let lastDayKey = "";
 
-    const grouped: { [key: string]: Transaction[] } = {};
-    catTxs.forEach((t) => {
+    const ROW_HEIGHT = 72;
+    const HEADER_HEIGHT = 40;
+
+    // True O(N) - single pass since transactions are already sorted by date DESC
+    for (const t of transactions) {
+      if (t.categoryId !== id) continue;
+
       total += t.amount;
+
+      // Day boundary check
       const d = new Date(t.date);
       d.setHours(0, 0, 0, 0);
-      const key = d.getTime().toString();
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(t);
-    });
+      const dayKey = d.getTime().toString();
 
-    const flatList: FlatListItem[] = [];
-    Object.keys(grouped)
-      .sort((a, b) => Number(b) - Number(a))
-      .forEach((key) => {
-        const timestamp = Number(key);
+      if (dayKey !== lastDayKey) {
+        lastDayKey = dayKey;
+        const timestamp = Number(dayKey);
         let title = format(timestamp, "MMM dd, yyyy");
         if (isToday(timestamp)) title = "Today";
         else if (isYesterday(timestamp)) title = "Yesterday";
 
-        flatList.push({ type: "header", title, id: `header-${key}` });
-        grouped[key].forEach((t) => {
-          flatList.push({ type: "transaction", transaction: t, id: t.id });
-        });
-      });
+        flatList.push({ type: "header", title, id: `header-${dayKey}` });
+        itemOffsets.push(currentOffset);
+        currentOffset += HEADER_HEIGHT;
+      }
 
-    return { filteredData: flatList, totalAmount: total };
+      flatList.push({ type: "transaction", transaction: t, id: t.id });
+      itemOffsets.push(currentOffset);
+      currentOffset += ROW_HEIGHT;
+    }
+
+    return { filteredData: flatList, totalAmount: total, offsets: itemOffsets };
   }, [id, transactions]);
 
+  const getItemLayout = useCallback(
+    (data: any, index: number) => {
+      const ROW_HEIGHT = 72;
+      const HEADER_HEIGHT = 40;
+      const isHeader = data[index]?.type === "header";
+
+      return {
+        length: isHeader ? HEADER_HEIGHT : ROW_HEIGHT,
+        offset: offsets[index] || 0,
+        index,
+      };
+    },
+    [offsets],
+  );
+
   const renderItem = useCallback(
-    (item: FlatListItem) => {
+    ({ item }: { item: FlatListItem }) => {
       if (item.type === "header") {
         return (
           <View style={styles.sectionHeader}>
@@ -121,6 +145,7 @@ export default function CategoryDetailScreen() {
           data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          getItemLayout={getItemLayout}
           ListHeaderComponent={() => (
             <Animated.View layout={LinearTransition} style={styles.summaryCard}>
               <View

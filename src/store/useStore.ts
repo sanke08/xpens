@@ -1,8 +1,3 @@
-import { create } from "zustand";
-import { generateId } from "../utils/id";
-import { dbService } from "../services/DatabaseService";
-import { defaultCategories } from "../features/categories/categoryKeywords";
-import { Category, RecurringTransaction, Transaction } from "../types";
 import {
   addDays,
   addMonths,
@@ -12,6 +7,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { create } from "zustand";
+import { defaultCategories } from "../features/categories/categoryKeywords";
+import { dbService } from "../services/DatabaseService";
+import { Category, RecurringTransaction, Transaction } from "../types";
+import { generateId } from "../utils/id";
 
 interface AppState {
   categories: Category[];
@@ -45,6 +45,13 @@ interface AppState {
   clearAllTransactions: () => void;
 }
 
+const computeSearchText = (t: Partial<Transaction>) => {
+  return [t.categoryName, t.title, t.note, t.location, t.withPerson]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+};
+
 export const useStore = create<AppState>((set, get) => ({
   categories: [],
   transactions: [],
@@ -71,7 +78,10 @@ export const useStore = create<AppState>((set, get) => ({
 
       set({
         categories: allCats,
-        transactions: txs,
+        transactions: txs.map((t) => ({
+          ...t,
+          searchText: computeSearchText(t),
+        })),
         recurringTransactions: recurringTxs,
         isLoaded: true,
       });
@@ -146,6 +156,7 @@ export const useStore = create<AppState>((set, get) => ({
             createdAt: now,
             updatedAt: now,
           };
+          newTx.searchText = computeSearchText(newTx);
           newTransactions.push(newTx);
         });
 
@@ -215,7 +226,13 @@ export const useStore = create<AppState>((set, get) => ({
   addTransaction: (txData) => {
     const id = generateId();
     const now = Date.now();
-    const tx: Transaction = { ...txData, id, createdAt: now, updatedAt: now };
+    const tx: Transaction = {
+      ...txData,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      searchText: computeSearchText(txData),
+    };
 
     set((state) => ({ transactions: [tx, ...state.transactions] }));
 
@@ -247,6 +264,7 @@ export const useStore = create<AppState>((set, get) => ({
       id: generateId(),
       createdAt: now,
       updatedAt: now,
+      searchText: computeSearchText(t),
     }));
 
     set((state) => ({

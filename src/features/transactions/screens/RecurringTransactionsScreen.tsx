@@ -21,7 +21,7 @@ export default function RecurringTransactionsScreen() {
   );
 
   const renderItem = useCallback(
-    (item: RecurringTransaction) => {
+    ({ item }: { item: RecurringTransaction }) => {
       return (
         <SwipeableRow onDelete={() => deleteRecurringTransaction(item.id)}>
           <View style={styles.card}>
