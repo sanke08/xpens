@@ -3,7 +3,15 @@ import { generateId } from "../utils/id";
 import { dbService } from "../services/DatabaseService";
 import { defaultCategories } from "../features/categories/categoryKeywords";
 import { Category, RecurringTransaction, Transaction } from "../types";
-import { addDays, addMonths, addWeeks, isAfter, startOfDay } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  isAfter,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 
 interface AppState {
   categories: Category[];
@@ -83,23 +91,37 @@ export const useStore = create<AppState>((set, get) => ({
     recurringTransactions.forEach((rt) => {
       if (!rt.isActive) return;
 
-      let lastDate = rt.lastGeneratedDate || rt.startDate;
-      let nextDate = lastDate;
-
-      // Calculate next occurrences
-      const occurrences: number[] = [];
-      const MAX_OCCURRENCES = 365; // Safety limit
+      let lastDate = rt.lastGeneratedDate;
+      let nextDate = lastDate || rt.startDate;
       let count = 0;
+      const MAX_OCCURRENCES = 365;
+
+      const occurrences: number[] = [];
+
+      // If never generated, consider the start date as the first occurrence
+      if (!lastDate) {
+        if (!isAfter(startOfDay(nextDate), today)) {
+          occurrences.push(nextDate);
+          count++;
+        }
+      }
 
       while (count < MAX_OCCURRENCES) {
-        if (rt.interval === "daily") nextDate = addDays(nextDate, 1).getTime();
-        else if (rt.interval === "weekly")
-          nextDate = addWeeks(nextDate, 1).getTime();
-        else if (rt.interval === "monthly")
-          nextDate = addMonths(nextDate, 1).getTime();
-        else break;
+        if (rt.interval === "daily") {
+          nextDate = addDays(nextDate, 1).getTime();
+        } else if (rt.interval === "weekly") {
+          // Move to the 1st day of the next week (Monday)
+          nextDate = startOfWeek(addWeeks(nextDate, 1), {
+            weekStartsOn: 1,
+          }).getTime();
+        } else if (rt.interval === "monthly") {
+          // Move to the 1st of the next month
+          nextDate = startOfMonth(addMonths(nextDate, 1)).getTime();
+        } else {
+          break;
+        }
 
-        if (isAfter(nextDate, today)) break;
+        if (isAfter(startOfDay(nextDate), today)) break;
         occurrences.push(nextDate);
         count++;
       }
