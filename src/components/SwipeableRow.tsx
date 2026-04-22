@@ -63,6 +63,7 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
       friction={2}
       rightThreshold={40}
       enableTrackpadTwoFingerGesture
+      containerStyle={{ marginBottom: 10 }}
     >
       {children}
     </ReanimatedSwipeable>

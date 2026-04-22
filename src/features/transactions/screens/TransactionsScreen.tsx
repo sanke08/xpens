@@ -3,22 +3,16 @@ import { useRouter } from "expo-router";
 import { Search as SearchIcon } from "lucide-react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  FlatList,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import Animated, {
-  FadeOutLeft,
-  FadeOutUp,
-  LinearTransition,
-} from "react-native-reanimated";
 
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
+import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
@@ -27,10 +21,6 @@ type FlatListItem =
   | { type: "header"; title: string; id: string }
   | { type: "transaction"; transaction: Transaction; id: string };
 
-/**
- * TransactionsScreen - Provides a detailed, searchable list of all transactions.
- * Transactions are grouped by date and can be filtered by type (Income/Expense).
- */
 export default function TransactionsScreen() {
   const router = useRouter();
   const transactions = useStore((state) => state.transactions);
@@ -61,7 +51,6 @@ export default function TransactionsScreen() {
       );
     }
 
-    // Grouping transactions by date
     const grouped: { [key: string]: Transaction[] } = {};
     filtered.forEach((t) => {
       const d = new Date(t.date);
@@ -95,46 +84,33 @@ export default function TransactionsScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: FlatListItem }) => {
+    (item: FlatListItem) => {
       if (item.type === "header") {
         return (
-          <Animated.View
-            key={item.id}
-            style={styles.sectionHeader}
-            layout={LinearTransition}
-            exiting={FadeOutLeft}
-          >
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
-          </Animated.View>
+          </View>
         );
       }
 
       const { transaction } = item;
       return (
-        <Animated.View
-          key={item.id}
-          layout={LinearTransition}
-          exiting={FadeOutUp}
-        >
-          <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
-            <TransactionRow
-              transaction={transaction}
-              category={getCategory(transaction.categoryId)}
-              onPress={() =>
-                router.push({
-                  pathname: "/transaction",
-                  params: { id: transaction.id },
-                } as any)
-              }
-            />
-          </SwipeableRow>
-        </Animated.View>
+        <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
+          <TransactionRow
+            transaction={transaction}
+            category={getCategory(transaction.categoryId)}
+            onPress={() =>
+              router.push({
+                pathname: "/transaction",
+                params: { id: transaction.id },
+              } as any)
+            }
+          />
+        </SwipeableRow>
       );
     },
     [deleteTransaction, getCategory, router],
   );
-
-  const keyExtractor = useCallback((item: FlatListItem) => item.id, []);
 
   return (
     <>
@@ -172,23 +148,18 @@ export default function TransactionsScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      <Animated.View style={{ flex: 1 }} layout={LinearTransition}>
-        <FlatList
-          data={filteredData}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No transactions found</Text>
-            </View>
-          }
-          contentContainerStyle={styles.listContent}
-          initialNumToRender={20}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          removeClippedSubviews={Platform.OS === "android"}
-        />
-      </Animated.View>
+
+      <XpensList
+        data={filteredData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No transactions found</Text>
+          </View>
+        }
+        contentContainerStyle={styles.listContent}
+      />
     </>
   );
 }

@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -12,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { getIcon } from "../iconMap";
@@ -21,7 +21,7 @@ import { getIcon } from "../iconMap";
  * Allows users to view existing categories and add new ones (defaults to Expense).
  */
 export default function CategoriesScreen() {
-  const router = useRouter();
+  const { bottom } = useSafeAreaInsets();
   const { categories, addCategory } = useStore();
   const [newCatName, setNewCatName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -77,7 +77,7 @@ export default function CategoriesScreen() {
         </ScrollView>
 
         {isAdding ? (
-          <View style={styles.addForm}>
+          <View style={[styles.addForm, { marginBottom: bottom }]}>
             <TextInput
               style={styles.input}
               placeholder="Category Name"
@@ -102,7 +102,7 @@ export default function CategoriesScreen() {
           </View>
         ) : (
           <TouchableOpacity
-            style={styles.addBtn}
+            style={[styles.addBtn, { marginBottom: bottom }]}
             onPress={() => setIsAdding(true)}
           >
             <View style={styles.addBtnIcon}>

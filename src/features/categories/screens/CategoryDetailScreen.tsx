@@ -2,21 +2,12 @@ import { format, isToday, isYesterday } from "date-fns";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Animated, {
-  FadeOutLeft,
-  FadeOutUp,
-  LinearTransition,
-} from "react-native-reanimated";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import Animated, { LinearTransition } from "react-native-reanimated";
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
+import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
@@ -26,10 +17,6 @@ type FlatListItem =
   | { type: "header"; title: string; id: string }
   | { type: "transaction"; transaction: Transaction; id: string };
 
-/**
- * CategoryDetailScreen - Specialized view for a specific category.
- * Shows total usage and a chronological list of transactions filtered by this category.
- */
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -43,7 +30,6 @@ export default function CategoryDetailScreen() {
     let total = 0;
     const catTxs = transactions.filter((t) => t.categoryId === id);
 
-    // Grouping by date
     const grouped: { [key: string]: Transaction[] } = {};
     catTxs.forEach((t) => {
       total += t.amount;
@@ -73,41 +59,30 @@ export default function CategoryDetailScreen() {
   }, [id, transactions]);
 
   const renderItem = useCallback(
-    ({ item }: { item: FlatListItem }) => {
+    (item: FlatListItem) => {
       if (item.type === "header") {
         return (
-          <Animated.View
-            key={item.id}
-            style={styles.sectionHeader}
-            layout={LinearTransition}
-            exiting={FadeOutLeft}
-          >
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
-          </Animated.View>
+          </View>
         );
       }
 
       const { transaction } = item;
       return (
-        <Animated.View
-          key={item.id}
-          layout={LinearTransition}
-          exiting={FadeOutUp}
-        >
-          <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
-            <TransactionRow
-              transaction={transaction}
-              category={category!}
-              variant="category"
-              onPress={() =>
-                router.push({
-                  pathname: "/transaction",
-                  params: { id: transaction.id },
-                } as any)
-              }
-            />
-          </SwipeableRow>
-        </Animated.View>
+        <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
+          <TransactionRow
+            transaction={transaction}
+            category={category!}
+            variant="category"
+            onPress={() =>
+              router.push({
+                pathname: "/transaction",
+                params: { id: transaction.id },
+              } as any)
+            }
+          />
+        </SwipeableRow>
       );
     },
     [deleteTransaction, category, router],
@@ -135,24 +110,26 @@ export default function CategoryDetailScreen() {
   const isIncome = category.type === "income";
 
   return (
-    <View style={styles.container}>
+    <>
       <Stack.Screen
         options={{
           title: category.name,
         }}
       />
-      <Animated.View style={{ flex: 1 }} layout={LinearTransition}>
-        <FlatList
+      <Animated.View layout={LinearTransition} style={{ flex: 1 }}>
+        <XpensList
           data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListHeaderComponent={() => (
-            <View style={styles.summaryCard}>
+            <Animated.View layout={LinearTransition} style={styles.summaryCard}>
               <View
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: isIncome ? COLORS.successBg : COLORS.active,
+                    backgroundColor: isIncome
+                      ? COLORS.successBg
+                      : COLORS.active,
                   },
                 ]}
               >
@@ -172,7 +149,7 @@ export default function CategoryDetailScreen() {
               >
                 {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
               </Text>
-            </View>
+            </Animated.View>
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -184,7 +161,7 @@ export default function CategoryDetailScreen() {
           contentContainerStyle={styles.listContent}
         />
       </Animated.View>
-    </View>
+    </>
   );
 }
 
@@ -232,8 +209,8 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingVertical: 8,
-    marginTop: 8,
+    // paddingVertical: 8,
+    // marginTop: 8,
   },
   sectionTitle: {
     fontSize: 13,

@@ -1,7 +1,7 @@
 import { format } from "date-fns";
-import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { memo } from "react";
 import { getIcon } from "../features/categories/iconMap";
 import { COLORS } from "../theme/colors";
 import { Category, Transaction } from "../types";
@@ -17,7 +17,7 @@ interface TransactionRowProps {
  * TransactionRow - Renders a single transaction list item.
  * Supports different layout variants and displays amount, note, and time.
  */
-export const TransactionRow = React.memo(function TransactionRow({
+export const TransactionRow = memo(function TransactionRow({
   transaction,
   category,
   onPress,

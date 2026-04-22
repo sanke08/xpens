@@ -46,6 +46,7 @@ export default function TransactionScreen() {
   const transactions = useStore((state) => state.transactions);
   const categories = useStore((state) => state.categories);
   const addCategory = useStore((state) => state.addCategory);
+  const deleteTransaction = useStore((state) => state.deleteTransaction);
 
   const existingTx =
     typeof id === "string" ? transactions.find((t) => t.id === id) : undefined;
@@ -150,14 +151,21 @@ export default function TransactionScreen() {
       withPerson: withPerson || null,
     };
 
-    if (existingTx) {
-      updateTransaction(existingTx.id, payload);
-    } else if (isRecurring) {
+    if (isRecurring) {
+      // If automate is on, we create a recurring transaction.
+      // If we were editing a single tx, we could either convert it or keep it separate.
+      // Standard behavior: create the recurring schedule.
       addRecurringTransaction({
         ...payload,
         interval: interval,
         startDate: Date.now(),
       });
+      // Optionally delete the existing single tx if we are converting
+      if (existingTx) {
+        deleteTransaction(existingTx.id);
+      }
+    } else if (existingTx) {
+      updateTransaction(existingTx.id, payload);
     } else {
       addTransaction({
         ...payload,

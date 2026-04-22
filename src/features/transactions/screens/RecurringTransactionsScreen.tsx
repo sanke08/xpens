@@ -1,78 +1,81 @@
 import { useRouter } from "expo-router";
 import { Clock, Plus } from "lucide-react-native";
-import React from "react";
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useCallback } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SwipeableRow } from "../../../components/SwipeableRow";
+import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { RecurringTransaction } from "../../../types";
 
 export default function RecurringTransactionsScreen() {
   const router = useRouter();
-  const { recurringTransactions, deleteRecurringTransaction, categories } =
-    useStore();
+  const { bottom, right } = useSafeAreaInsets();
+  const recurringTransactions = useStore(
+    (state) => state.recurringTransactions,
+  );
+  const deleteRecurringTransaction = useStore(
+    (state) => state.deleteRecurringTransaction,
+  );
 
-  const getCategory = (id: string | null) =>
-    categories.find((c) => c.id === id);
-
-  const renderItem = ({ item }: { item: RecurringTransaction }) => {
-    const category = getCategory(item.categoryId);
-    return (
-      <SwipeableRow onDelete={() => deleteRecurringTransaction(item.id)}>
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.titleGroup}>
-              <Text style={styles.cardTitle}>
-                {item.categoryName || "Uncategorized"}
-              </Text>
-              {item.title ? (
-                <Text style={styles.cardSubtitle}>{item.title}</Text>
-              ) : null}
-            </View>
-            <Text
-              style={[
-                styles.amount,
-                {
-                  color: item.type === "income" ? COLORS.success : COLORS.text,
-                },
-              ]}
-            >
-              {item.type === "income" ? "+" : "-"}₹
-              {item.amount.toLocaleString("en-IN")}
-            </Text>
-          </View>
-
-          <View style={styles.details}>
-            <View style={styles.badge}>
-              <Clock size={12} color={COLORS.muted} />
-              <Text style={styles.badgeText}>
-                {item.interval.charAt(0).toUpperCase() + item.interval.slice(1)}
-              </Text>
-            </View>
-            {!item.isActive && (
-              <View
-                style={[styles.badge, { backgroundColor: COLORS.dangerBg }]}
+  const renderItem = useCallback(
+    (item: RecurringTransaction) => {
+      return (
+        <SwipeableRow onDelete={() => deleteRecurringTransaction(item.id)}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.titleGroup}>
+                <Text style={styles.cardTitle}>
+                  {item.categoryName || "Uncategorized"}
+                </Text>
+                {item.title ? (
+                  <Text style={styles.cardSubtitle}>{item.title}</Text>
+                ) : null}
+              </View>
+              <Text
+                style={[
+                  styles.amount,
+                  {
+                    color:
+                      item.type === "income" ? COLORS.success : COLORS.text,
+                  },
+                ]}
               >
-                <Text style={[styles.badgeText, { color: COLORS.danger }]}>
-                  Paused
+                {item.type === "income" ? "+" : "-"}₹
+                {item.amount.toLocaleString("en-IN")}
+              </Text>
+            </View>
+
+            <View style={styles.details}>
+              <View style={styles.badge}>
+                <Clock size={12} color={COLORS.muted} />
+                <Text style={styles.badgeText}>
+                  {item.interval.charAt(0).toUpperCase() +
+                    item.interval.slice(1)}
                 </Text>
               </View>
-            )}
+              {!item.isActive && (
+                <View
+                  style={[styles.badge, { backgroundColor: COLORS.dangerBg }]}
+                >
+                  <Text style={[styles.badgeText, { color: COLORS.danger }]}>
+                    Paused
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      </SwipeableRow>
-    );
-  };
+        </SwipeableRow>
+      );
+    },
+    [deleteRecurringTransaction],
+  );
 
   return (
-    <View style={styles.container}>
-      <FlatList
+    <>
+      <XpensList
         data={recurringTransactions}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
@@ -89,35 +92,18 @@ export default function RecurringTransactionsScreen() {
       />
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { right: right + 20, bottom: bottom + 20 }]}
         onPress={() => router.push("/transaction")}
       >
         <Plus size={28} color={COLORS.background} />
       </TouchableOpacity>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  backBtn: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
   listContent: {
-    paddingBottom: 100,
+    paddingTop: 16,
   },
   card: {
     backgroundColor: COLORS.card,
@@ -125,6 +111,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
+    // marginBottom: 16,
   },
   cardHeader: {
     flexDirection: "row",
@@ -169,8 +156,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 20,
     width: 64,
     height: 64,
     borderRadius: 32,

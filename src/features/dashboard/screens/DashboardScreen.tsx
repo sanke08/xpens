@@ -27,7 +27,13 @@ export default function DashboardScreen() {
   const categories = useStore((state) => state.categories);
   const transactions = useStore((state) => state.transactions);
   const addTransactions = useStore((state) => state.addTransactions);
+  const addRecurringTransaction = useStore(
+    (state) => state.addRecurringTransaction,
+  );
   const clearAllTransactions = useStore((state) => state.clearAllTransactions);
+  const deleteRecurringTransaction = useStore(
+    (state) => state.deleteRecurringTransaction,
+  );
 
   const { bottom } = useSafeAreaInsets();
   const [animationKey, setAnimationKey] = React.useState(0);
@@ -75,7 +81,36 @@ export default function DashboardScreen() {
       });
     }
     addTransactions(dummyTxs);
-  }, [categories, addTransactions]);
+
+    // Add 3-4 recurring transactions
+    const recurringItems = [
+      { title: "Monthly Rent", amount: 15000, interval: "monthly" },
+      { title: "Netflix Subscription", amount: 499, interval: "monthly" },
+      { title: "Weekly Groceries", amount: 2000, interval: "weekly" },
+      { title: "Gym Membership", amount: 1200, interval: "monthly" },
+    ];
+
+    recurringItems.forEach((item) => {
+      const type = "expense";
+      const filteredCats = categories.filter((c) => c.type === type);
+      const category =
+        filteredCats[Math.floor(Math.random() * filteredCats.length)] ||
+        categories[0];
+
+      addRecurringTransaction({
+        amount: item.amount,
+        type: "expense",
+        categoryId: category.id,
+        categoryName: category.name,
+        title: item.title,
+        note: `Dummy recurring for ${item.title}`,
+        location: null,
+        withPerson: null,
+        interval: item.interval as any,
+        startDate: Date.now(),
+      });
+    });
+  }, [categories, addTransactions, addRecurringTransaction]);
 
   // Compute category-wise totals and metadata for the summary list
   const categorySummaries = useMemo(() => {

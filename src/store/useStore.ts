@@ -449,8 +449,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   clearAllTransactions: () => {
-    set({ transactions: [] });
+    set({ transactions: [], recurringTransactions: [] });
     const db = dbService.getDb();
     db.runSync("DELETE FROM transactions;");
+    db.runSync("DELETE FROM recurring_transactions;");
   },
 }));
