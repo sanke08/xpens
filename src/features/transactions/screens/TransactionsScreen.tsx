@@ -3,20 +3,29 @@ import { useRouter } from "expo-router";
 import { Search as SearchIcon } from "lucide-react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
+  FlatList,
   Platform,
-  SectionList,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  FadeOutLeft,
+  FadeOutUp,
+  LinearTransition,
+} from "react-native-reanimated";
 
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
+
+type FlatListItem =
+  | { type: "header"; title: string; id: string }
+  | { type: "transaction"; transaction: Transaction; id: string };
 
 /**
  * TransactionsScreen - Provides a detailed, searchable list of all transactions.
@@ -50,7 +59,7 @@ export default function TransactionsScreen() {
       );
     }
 
-    // Grouping transactions by date for the SectionList
+    // Grouping transactions by date
     const grouped: { [key: string]: Transaction[] } = {};
     filtered.forEach((t) => {
       const d = new Date(t.date);
@@ -60,19 +69,22 @@ export default function TransactionsScreen() {
       grouped[key].push(t);
     });
 
-    return Object.keys(grouped)
+    const flatList: FlatListItem[] = [];
+    Object.keys(grouped)
       .sort((a, b) => Number(b) - Number(a))
-      .map((key) => {
+      .forEach((key) => {
         const timestamp = Number(key);
         let title = format(timestamp, "MMM dd, yyyy");
         if (isToday(timestamp)) title = "Today";
         else if (isYesterday(timestamp)) title = "Yesterday";
 
-        return {
-          title,
-          data: grouped[key],
-        };
+        flatList.push({ type: "header", title, id: `header-${key}` });
+        grouped[key].forEach((t) => {
+          flatList.push({ type: "transaction", transaction: t, id: t.id });
+        });
       });
+
+    return flatList;
   }, [transactions, searchQuery, filterType]);
 
   const getCategory = useCallback(
@@ -81,33 +93,46 @@ export default function TransactionsScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Transaction }) => (
-      <SwipeableRow onDelete={() => deleteTransaction(item.id)}>
-        <TransactionRow
-          transaction={item}
-          category={getCategory(item.categoryId)}
-          onPress={() =>
-            router.push({
-              pathname: "/transaction",
-              params: { id: item.id },
-            } as any)
-          }
-        />
-      </SwipeableRow>
-    ),
+    ({ item }: { item: FlatListItem }) => {
+      if (item.type === "header") {
+        return (
+          <Animated.View
+            key={item.id}
+            style={styles.sectionHeader}
+            layout={LinearTransition}
+            exiting={FadeOutLeft}
+          >
+            <Text style={styles.sectionTitle}>{item.title}</Text>
+          </Animated.View>
+        );
+      }
+
+      const { transaction } = item;
+      return (
+        <Animated.View
+          key={item.id}
+          layout={LinearTransition}
+          exiting={FadeOutUp}
+        >
+          <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
+            <TransactionRow
+              transaction={transaction}
+              category={getCategory(transaction.categoryId)}
+              onPress={() =>
+                router.push({
+                  pathname: "/transaction",
+                  params: { id: transaction.id },
+                } as any)
+              }
+            />
+          </SwipeableRow>
+        </Animated.View>
+      );
+    },
     [deleteTransaction, getCategory, router],
   );
 
-  const renderSectionHeader = useCallback(
-    ({ section: { title } }: { section: { title: string } }) => (
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-    ),
-    [],
-  );
-
-  const keyExtractor = useCallback((item: Transaction) => item.id, []);
+  const keyExtractor = useCallback((item: FlatListItem) => item.id, []);
 
   return (
     <>
@@ -145,43 +170,28 @@ export default function TransactionsScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
-      <SectionList
-        sections={filteredData}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No transactions found</Text>
-          </View>
-        }
-        stickySectionHeadersEnabled={false}
-        contentContainerStyle={styles.listContent}
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        removeClippedSubviews={Platform.OS === "android"}
-      />
+      <Animated.View style={{ flex: 1 }} layout={LinearTransition}>
+        <FlatList
+          data={filteredData}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No transactions found</Text>
+            </View>
+          }
+          contentContainerStyle={styles.listContent}
+          initialNumToRender={20}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews={Platform.OS === "android"}
+        />
+      </Animated.View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  backBtn: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
   searchContainer: {
     paddingBottom: 12,
   },

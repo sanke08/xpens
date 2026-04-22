@@ -17,6 +17,12 @@ import {
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Category, RecurrenceInterval } from "../../../types";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  LinearTransition,
+} from "react-native-reanimated";
 import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
@@ -251,7 +257,11 @@ export default function TransactionScreen() {
           </View>
 
           {isRecurring && (
-            <View style={styles.intervalPicker}>
+            <Animated.View
+              entering={FadeInDown.duration(300)}
+              exiting={FadeOut.duration(200)}
+              style={styles.intervalPicker}
+            >
               {(["daily", "weekly", "monthly"] as const).map((i) => (
                 <TouchableOpacity
                   key={i}
@@ -271,7 +281,7 @@ export default function TransactionScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </Animated.View>
           )}
 
           <View style={styles.hintArea}>
@@ -301,7 +311,12 @@ export default function TransactionScreen() {
           </View>
 
           {showDetails && (
-            <View style={styles.detailsArea}>
+            <Animated.View
+              entering={FadeInDown.duration(400)}
+              exiting={FadeOut.duration(200)}
+              layout={LinearTransition.springify()}
+              style={styles.detailsArea}
+            >
               <View style={styles.catsList}>
                 <ScrollView
                   horizontal
@@ -366,7 +381,7 @@ export default function TransactionScreen() {
                   onChangeText={setWithPerson}
                 />
               </View>
-            </View>
+            </Animated.View>
           )}
 
           <EGBlock

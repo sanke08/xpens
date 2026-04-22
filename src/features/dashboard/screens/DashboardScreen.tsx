@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BalanceCard } from "../../../components/BalanceCard";
@@ -26,6 +27,12 @@ export default function DashboardScreen() {
   const { categories, transactions, addTransactions, clearAllTransactions } =
     useStore();
   const { bottom } = useSafeAreaInsets();
+  const [animationKey, setAnimationKey] = React.useState(0);
+
+  const handleReplayAnimation = useCallback(() => {
+    setAnimationKey((prev) => prev + 1);
+  }, []);
+
   const handleAddDummyData = useCallback(() => {
     const types: ("expense" | "income")[] = [
       "expense",
@@ -96,6 +103,7 @@ export default function DashboardScreen() {
   const renderItem = useCallback(
     ({
       item,
+      index,
     }: {
       item: {
         category: Category;
@@ -103,8 +111,10 @@ export default function DashboardScreen() {
         count: number;
         latest: number;
       };
+      index: number;
     }) => (
       <CategorySummaryRow
+        index={index}
         category={item.category}
         totalAmount={item.totalAmount}
         transactionCount={item.count}
@@ -136,34 +146,41 @@ export default function DashboardScreen() {
 
   const ListFooter = useMemo(
     () => (
-      <View style={styles.debugSection}>
-        <Text style={styles.debugTitle}>Debug Tools</Text>
-        <View style={styles.debugButtons}>
-          <TouchableOpacity
-            onPress={handleAddDummyData}
-            style={[styles.debugBtn, { backgroundColor: COLORS.successBg }]}
-          >
-            <Text style={[styles.debugBtnText, { color: COLORS.success }]}>
-              +30 Data
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={clearAllTransactions}
-            style={[styles.debugBtn, { backgroundColor: COLORS.dangerBg }]}
-          >
-            <Text style={[styles.debugBtnText, { color: COLORS.danger }]}>
-              Clear All
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.debugButtons}>
+        <TouchableOpacity
+          onPress={handleAddDummyData}
+          style={[styles.debugBtn, { backgroundColor: COLORS.successBg }]}
+        >
+          <Text style={[styles.debugBtnText, { color: COLORS.success }]}>
+            +30 Data
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleReplayAnimation}
+          style={[styles.debugBtn, { backgroundColor: COLORS.active }]}
+        >
+          <Text style={[styles.debugBtnText, { color: COLORS.text }]}>
+            Replay
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={clearAllTransactions}
+          style={[styles.debugBtn, { backgroundColor: COLORS.dangerBg }]}
+        >
+          <Text style={[styles.debugBtnText, { color: COLORS.danger }]}>
+            Clear All
+          </Text>
+        </TouchableOpacity>
       </View>
     ),
-    [handleAddDummyData, clearAllTransactions],
+    [handleAddDummyData, clearAllTransactions, handleReplayAnimation],
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} key={animationKey}>
+      {ListFooter}
       <FlatList
+        key={`list-${animationKey}`}
         data={categorySummaries}
         keyExtractor={(item) => item.category.id}
         renderItem={renderItem}
@@ -183,7 +200,11 @@ export default function DashboardScreen() {
         removeClippedSubviews={Platform.OS === "android"}
       />
 
-      <View style={[styles.bottomBar, { bottom }]}>
+      <Animated.View
+        key={`bar-${animationKey}`}
+        entering={FadeInDown.delay(500).springify()}
+        style={[styles.bottomBar, { bottom }]}
+      >
         <TouchableOpacity
           onPress={() => router.push("/recurring" as any)}
           style={styles.iconActionBtn}
@@ -206,7 +227,7 @@ export default function DashboardScreen() {
         >
           <Settings size={24} color={COLORS.text} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -239,8 +260,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     position: "absolute",
-    left: 20,
-    right: 20,
     backgroundColor: COLORS.background,
   },
   iconActionBtn: {
@@ -265,15 +284,6 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 16,
     fontWeight: "700",
-  },
-  debugSection: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: "dashed",
   },
   debugTitle: {
     fontSize: 12,

@@ -13,7 +13,10 @@ interface BalanceCardProps {
  * BalanceCard component displays the overall financial summary.
  * It shows total balance, income, and expenses, along with today's net change.
  */
-export function BalanceCard({ transactions }: BalanceCardProps) {
+
+export const BalanceCard = React.memo(function BalanceCard({
+  transactions,
+}: BalanceCardProps) {
   let totalIncome = 0;
   let totalExpense = 0;
   let todayBalance = 0;
@@ -75,7 +78,7 @@ export function BalanceCard({ transactions }: BalanceCardProps) {
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

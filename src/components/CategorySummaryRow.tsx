@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { getIcon } from "../features/categories/iconMap";
 import { COLORS } from "../theme/colors";
 import { Category } from "../types";
@@ -12,6 +13,7 @@ interface CategorySummaryRowProps {
   transactionCount: number;
   latestTransactionDate?: number;
   onPress: () => void;
+  index: number;
 }
 
 /**
@@ -23,6 +25,7 @@ export const CategorySummaryRow = React.memo(function CategorySummaryRow({
   totalAmount,
   transactionCount,
   latestTransactionDate,
+  index,
   onPress,
 }: CategorySummaryRowProps) {
   const IconComponent = getIcon(category.icon);
@@ -32,32 +35,34 @@ export const CategorySummaryRow = React.memo(function CategorySummaryRow({
   const bgColor = isIncome ? COLORS.successBg : COLORS.active;
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.iconContainer, { backgroundColor: bgColor }]}>
-        <IconComponent size={24} color={color} />
-      </View>
+    <Animated.View entering={FadeInDown.delay(index * 50)}>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: bgColor }]}>
+          <IconComponent size={24} color={color} />
+        </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.name}>{category.name}</Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {transactionCount}{" "}
-          {transactionCount === 1 ? "transaction" : "transactions"}
-          {latestTransactionDate
-            ? ` • ${formatDistanceToNow(latestTransactionDate, { addSuffix: true })}`
-            : ""}
-        </Text>
-      </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.name}>{category.name}</Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {transactionCount}{" "}
+            {transactionCount === 1 ? "transaction" : "transactions"}
+            {latestTransactionDate
+              ? ` • ${formatDistanceToNow(latestTransactionDate, { addSuffix: true })}`
+              : ""}
+          </Text>
+        </View>
 
-      <View style={styles.amountContainer}>
-        <Text style={[styles.amount, isIncome && { color: COLORS.success }]}>
-          {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
-        </Text>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.amountContainer}>
+          <Text style={[styles.amount, isIncome && { color: COLORS.success }]}>
+            {isIncome ? "+" : ""}₹{totalAmount.toLocaleString("en-IN")}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 });
 
