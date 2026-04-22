@@ -22,6 +22,9 @@ interface AppState {
   addTransaction: (
     t: Omit<Transaction, "id" | "createdAt" | "updatedAt">,
   ) => void;
+  addTransactions: (
+    txs: Omit<Transaction, "id" | "createdAt" | "updatedAt">[],
+  ) => void;
   updateTransaction: (id: string, t: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   addRecurringTransaction: (
@@ -39,6 +42,7 @@ interface AppState {
   addCategory: (c: Omit<Category, "id" | "createdAt">) => void;
   updateCategory: (id: string, c: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
+  clearAllTransactions: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -236,6 +240,51 @@ export const useStore = create<AppState>((set, get) => ({
     stmt.finalizeSync();
   },
 
+  addTransactions: (txsData) => {
+    const now = Date.now();
+    const newTxs: Transaction[] = txsData.map((t) => ({
+      ...t,
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    set((state) => ({
+      transactions: [...newTxs, ...state.transactions].sort(
+        (a, b) => b.date - a.date,
+      ),
+    }));
+
+    const db = dbService.getDb();
+    try {
+      db.execSync("BEGIN TRANSACTION;");
+      const stmt = db.prepareSync(
+        "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      newTxs.forEach((tx) => {
+        stmt.executeSync([
+          tx.id,
+          tx.amount,
+          tx.type,
+          tx.categoryId,
+          tx.categoryName,
+          tx.title,
+          tx.note,
+          tx.location,
+          tx.withPerson,
+          tx.date,
+          tx.createdAt,
+          tx.updatedAt,
+        ]);
+      });
+      stmt.finalizeSync();
+      db.execSync("COMMIT;");
+    } catch (e) {
+      db.execSync("ROLLBACK;");
+      console.error("Error adding batch transactions", e);
+    }
+  },
+
   updateTransaction: (id, updates) => {
     set((state) => ({
       transactions: state.transactions.map((t) =>
@@ -397,5 +446,11 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     const db = dbService.getDb();
     db.runSync("DELETE FROM categories WHERE id = ?", id);
+  },
+
+  clearAllTransactions: () => {
+    set({ transactions: [] });
+    const db = dbService.getDb();
+    db.runSync("DELETE FROM transactions;");
   },
 }));

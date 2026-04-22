@@ -17,7 +17,7 @@ interface TransactionRowProps {
  * TransactionRow - Renders a single transaction list item.
  * Supports different layout variants and displays amount, note, and time.
  */
-export function TransactionRow({
+export const TransactionRow = React.memo(function TransactionRow({
   transaction,
   category,
   onPress,
@@ -92,7 +92,7 @@ export function TransactionRow({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

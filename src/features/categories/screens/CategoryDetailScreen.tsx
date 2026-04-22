@@ -1,5 +1,5 @@
 import { format, isToday, isYesterday } from "date-fns";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React, { useMemo } from "react";
 import {
@@ -83,21 +83,14 @@ export default function CategoryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{category.name}</Text>
-      </View>
-
+      <Stack.Screen
+        options={{
+          title: category.name,
+        }}
+      />
       <SectionList
         ItemSeparatorComponent={() => (
-          <View
-            style={{
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderColor: COLORS.border,
-            }}
-          />
+          <View style={{ height: 20, backgroundColor: "red" }} />
         )}
         sections={filteredData}
         keyExtractor={(item) => item.id}
@@ -144,7 +137,6 @@ export default function CategoryDetailScreen() {
             </Text>
           </View>
         )}
-        invertStickyHeaders
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{title}</Text>
@@ -157,7 +149,6 @@ export default function CategoryDetailScreen() {
             </Text>
           </View>
         }
-        // stickySectionHeadersEnabled={false}
         contentContainerStyle={styles.listContent}
       />
     </View>
@@ -208,7 +199,6 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingVertical: 12,
   },
   sectionTitle: {
     fontSize: 13,

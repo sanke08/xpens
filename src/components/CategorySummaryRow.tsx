@@ -18,7 +18,7 @@ interface CategorySummaryRowProps {
  * CategorySummaryRow - Renders a row showing summary statistics for a specific category.
  * Used on the Dashboard to provide a high-level breakdown of spending/income.
  */
-export function CategorySummaryRow({
+export const CategorySummaryRow = React.memo(function CategorySummaryRow({
   category,
   totalAmount,
   transactionCount,
@@ -59,7 +59,7 @@ export function CategorySummaryRow({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

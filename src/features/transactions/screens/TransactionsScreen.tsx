@@ -1,8 +1,9 @@
 import { format, isToday, isYesterday } from "date-fns";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Search } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import { Search as SearchIcon } from "lucide-react-native";
+import React, { useCallback, useMemo, useState } from "react";
 import {
+  Platform,
   SectionList,
   StyleSheet,
   Text,
@@ -74,21 +75,45 @@ export default function TransactionsScreen() {
       });
   }, [transactions, searchQuery, filterType]);
 
-  const getCategory = (id?: string | null) =>
-    categories.find((c) => c.id === id);
+  const getCategory = useCallback(
+    (id?: string | null) => categories.find((c) => c.id === id),
+    [categories],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Transaction }) => (
+      <SwipeableRow onDelete={() => deleteTransaction(item.id)}>
+        <TransactionRow
+          transaction={item}
+          category={getCategory(item.categoryId)}
+          onPress={() =>
+            router.push({
+              pathname: "/transaction",
+              params: { id: item.id },
+            } as any)
+          }
+        />
+      </SwipeableRow>
+    ),
+    [deleteTransaction, getCategory, router],
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section: { title } }: { section: { title: string } }) => (
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+    ),
+    [],
+  );
+
+  const keyExtractor = useCallback((item: Transaction) => item.id, []);
 
   return (
     <>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>All Transactions</Text>
-      </View>
-
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color={COLORS.muted} />
+          <SearchIcon size={20} color={COLORS.muted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search transactions..."
@@ -123,26 +148,9 @@ export default function TransactionsScreen() {
 
       <SectionList
         sections={filteredData}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <SwipeableRow onDelete={() => deleteTransaction(item.id)}>
-            <TransactionRow
-              transaction={item}
-              category={getCategory(item.categoryId)}
-              onPress={() =>
-                router.push({
-                  pathname: "/transaction",
-                  params: { id: item.id },
-                } as any)
-              }
-            />
-          </SwipeableRow>
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-          </View>
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No transactions found</Text>
@@ -150,6 +158,10 @@ export default function TransactionsScreen() {
         }
         stickySectionHeadersEnabled={false}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={Platform.OS === "android"}
       />
     </>
   );

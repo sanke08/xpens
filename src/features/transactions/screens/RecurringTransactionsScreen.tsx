@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ArrowLeft, Clock, Plus } from "lucide-react-native";
+import { Clock, Plus } from "lucide-react-native";
 import React from "react";
 import {
   FlatList,
@@ -72,13 +72,6 @@ export default function RecurringTransactionsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Recurring Expenses</Text>
-      </View>
-
       <FlatList
         data={recurringTransactions}
         keyExtractor={(item) => item.id}

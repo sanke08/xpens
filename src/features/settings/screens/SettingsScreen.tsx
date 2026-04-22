@@ -1,12 +1,5 @@
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  Download,
-  Folder,
-  Shield,
-  Trash2,
-  Upload,
-} from "lucide-react-native";
+import { Download, Folder, Shield, Trash2, Upload } from "lucide-react-native";
 import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -57,13 +50,6 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
-
       <View style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
