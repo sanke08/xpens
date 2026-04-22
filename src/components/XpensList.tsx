@@ -57,9 +57,13 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
 
   const stableRenderItem = React.useCallback(
     ({ item, index }: { item: T; index: number }) => {
-      let enteringAnimation = itemEntering;
-      if (typeof enteringAnimation !== "function" && index < 15) {
-        enteringAnimation = (enteringAnimation as any).delay(index * 50);
+      let enteringAnimation: any = undefined;
+
+      if (index < 15) {
+        enteringAnimation = itemEntering;
+        if (typeof enteringAnimation !== "function") {
+          enteringAnimation = enteringAnimation.delay(index * 50);
+        }
       }
 
       return (
@@ -80,11 +84,12 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
     <Animated.View style={wrapperStyle}>
       <FlatList
         {...flatListProps}
-        // Performance defaults
+        // Performance defaults optimized for fast scrolling
         removeClippedSubviews={Platform.OS === "android"}
-        initialNumToRender={10}
-        maxToRenderPerBatch={20}
-        windowSize={21}
+        initialNumToRender={15}
+        maxToRenderPerBatch={40}
+        windowSize={11}
+        updateCellsBatchingPeriod={50}
         showsVerticalScrollIndicator={false}
         renderItem={stableRenderItem}
       />

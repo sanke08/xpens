@@ -129,7 +129,7 @@ export default function TransactionsScreen() {
         </SwipeableRow>
       );
     },
-    [deleteTransaction, router],
+    [deleteTransaction, router, categoryMap],
   );
 
   return (
