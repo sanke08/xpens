@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { XpensList } from "../../../components/XpensList";
@@ -133,7 +134,7 @@ export default function TransactionsScreen() {
   );
 
   return (
-    <>
+    <KeyboardAwareView style={{ flex: 1 }}>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <SearchIcon size={20} color={COLORS.muted} />
@@ -181,7 +182,7 @@ export default function TransactionsScreen() {
         }
         contentContainerStyle={styles.listContent}
       />
-    </>
+    </KeyboardAwareView>
   );
 }
 

@@ -24,6 +24,7 @@ import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
 // Extracted components
+import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AutoSuggestBlock } from "../components/AutoSuggestBlock";
 import { EGBlock } from "../components/EGBlock";
@@ -179,7 +180,7 @@ export default function TransactionScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ flex: 1, paddingTop: insets.top }}>
+      <KeyboardAwareView style={{ flex: 1, paddingTop: insets.top }}>
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={[styles.scrollArea]}
@@ -435,7 +436,7 @@ export default function TransactionScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAwareView>
 
       <Modal
         visible={createCatModalVisible}

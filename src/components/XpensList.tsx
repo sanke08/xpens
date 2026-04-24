@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { FlatList, FlatListProps, Platform, ViewStyle } from "react-native";
+import { FlatList, FlatListProps, View, ViewStyle } from "react-native";
 import Animated, {
   ComplexAnimationBuilder,
   EntryExitAnimationFunction,
@@ -82,19 +82,19 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
   );
 
   return (
-    <Animated.View style={wrapperStyle}>
+    <View style={[wrapperStyle, { flex: 1 }]}>
       <FlatList
         {...flatListProps}
-        // Disabled removeClippedSubviews to prevent the 1-2s delay during fast scrolling
-        removeClippedSubviews={false}
-        initialNumToRender={40}
-        maxToRenderPerBatch={20}
+        // Performance optimizations for fast scrolling
+        removeClippedSubviews={false} // Prevents blank space delay on Android
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
         windowSize={11}
-        updateCellsBatchingPeriod={30}
+        updateCellsBatchingPeriod={50}
         showsVerticalScrollIndicator={false}
         renderItem={stableRenderItem}
       />
-    </Animated.View>
+    </View>
   );
 }
 

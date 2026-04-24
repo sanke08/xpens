@@ -1,47 +1,50 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { ViewStyle, StyleProp } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useKeyboard } from "../../providers/KeyboardProvider";
+import Animated, {
+  AnimatedKeyboardInfo,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
-interface KeyboardAwareViewProps {
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-  /** Extra spacing above the keyboard/safe area */
-  offset?: number;
-  /** Whether to account for the safe area bottom inset when keyboard is closed */
-  useInsets?: boolean;
-  /** Whether to disable keyboard avoidance */
-  disabled?: boolean;
-}
+const KeyboardContext = createContext<AnimatedKeyboardInfo | null>(null);
 
 /**
- * KeyboardAwareView - A drop-in replacement for any container that needs to stay above the keyboard.
- * It uses the global KeyboardProvider for optimized performance.
+ * KeyboardProvider - Initializes the Reanimated keyboard listener once at the root level.
  */
-export const KeyboardAwareView: React.FC<KeyboardAwareViewProps> = ({
+export const KeyboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
-  style,
-  offset = 16,
-  useInsets = true,
-  disabled = false,
 }) => {
-  const keyboard = useKeyboard();
-  const insets = useSafeAreaInsets();
+  const keyboard = useAnimatedKeyboard();
 
-  const animatedStyle = useAnimatedStyle(() => {
-    if (disabled) {
-      return {
-        paddingBottom: useInsets ? insets.bottom : 0,
-      };
-    }
+  return (
+    <KeyboardContext.Provider value={keyboard}>
+      {children}
+    </KeyboardContext.Provider>
+  );
+};
 
-    const bottomInset = useInsets ? insets.bottom : 0;
-    // We use the global keyboard height and compare it with the safe area
-    return {
-      paddingBottom: Math.max(keyboard.height.value, bottomInset) + offset,
-    };
-  });
+/**
+ * useKeyboardHeight - Hook to consume the global keyboard shared value.
+ */
+export const useKeyboardHeight = () => {
+  const context = useContext(KeyboardContext);
+  if (!context) {
+    return useAnimatedKeyboard().height;
+  }
+  return context.height;
+};
+
+/**
+ * KeyboardAwareView - A reusable wrapper that automatically handles keyboard avoidance.
+ */
+export const KeyboardAwareView: React.FC<{
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}> = ({ children, style }) => {
+  const height = useKeyboardHeight();
+  const animatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: height.value,
+  }));
 
   return (
     <Animated.View style={[style, animatedStyle]}>
