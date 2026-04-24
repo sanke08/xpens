@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
+import { KeyboardAwareView } from "../src/components/keyboard/KeyboardAwareView";
+import { KeyboardProvider } from "../src/providers/KeyboardProvider";
 import { dbService } from "../src/services/DatabaseService";
 import { useStore } from "../src/store/useStore";
 import { COLORS } from "../src/theme/colors";
@@ -38,44 +40,49 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: COLORS.background,
-          },
-          headerTitleStyle: { color: COLORS.text, fontSize: 24 },
-          contentStyle: {
-            backgroundColor: COLORS.background,
-            paddingHorizontal: 20,
-          },
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            title: "Rxpense",
-          }}
-        />
-        <Stack.Screen
-          name="transaction"
-          options={{
-            presentation: "formSheet",
-            sheetGrabberVisible: true,
-          }}
-        />
-        <Stack.Screen name="categories" options={{ title: "Categories" }} />
-        <Stack.Screen name="category/[id]" />
-        <Stack.Screen
-          name="transactions"
-          options={{ title: "All Transactions" }}
-        />
-        <Stack.Screen
-          name="recurring/index"
-          options={{ title: "Recurring Expenses" }}
-        />
-        <Stack.Screen name="settings" options={{ title: "Settings" }} />
-      </Stack>
+      <KeyboardProvider>
+        <StatusBar style="light" />
+        <KeyboardAwareView style={{ flex: 1 }} useInsets={false} offset={0}>
+          <Stack
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: COLORS.background,
+              },
+              headerTitleStyle: { color: COLORS.text, fontSize: 24 },
+              headerBackVisible: false,
+              contentStyle: {
+                backgroundColor: COLORS.background,
+                paddingHorizontal: 20,
+              },
+            }}
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                title: "Rxpense",
+              }}
+            />
+            <Stack.Screen
+              name="transaction"
+              options={{
+                presentation: "formSheet",
+                sheetGrabberVisible: true,
+              }}
+            />
+            <Stack.Screen name="categories" options={{ title: "Categories" }} />
+            <Stack.Screen name="category/[id]" />
+            <Stack.Screen
+              name="transactions"
+              options={{ title: "All Transactions" }}
+            />
+            <Stack.Screen
+              name="recurring/index"
+              options={{ title: "Recurring Expenses" }}
+            />
+            <Stack.Screen name="settings" options={{ title: "Settings" }} />
+          </Stack>
+        </KeyboardAwareView>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

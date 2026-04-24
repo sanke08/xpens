@@ -241,7 +241,7 @@ export default function DashboardScreen() {
       <Animated.View
         key={`bar-${animationKey}`}
         entering={FadeInDown.delay(500).springify()}
-        style={[styles.bottomBar, { bottom }]}
+        style={[styles.bottomBar, { bottom: bottom + 20 }]}
       >
         <TouchableOpacity
           onPress={() => router.push("/recurring" as any)}

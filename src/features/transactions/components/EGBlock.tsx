@@ -1,6 +1,7 @@
 import { TransactionRow } from "@/src/components/TransactionRow";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Animated, { LinearTransition } from "react-native-reanimated";
 import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
 import { parseSmartInput } from "../../../utils/smartInput";
@@ -35,7 +36,10 @@ export const EGBlock: React.FC<EGBlockProps> = ({
     suggestedCat?.icon || (isTyping ? "circle-dot" : "pizza");
 
   return (
-    <View style={styles.smartInputContainer}>
+    <Animated.View
+      style={styles.smartInputContainer}
+      layout={LinearTransition.springify()}
+    >
       <Text style={styles.previewLabel}>List Preview</Text>
       <View pointerEvents="none">
         <TransactionRow
@@ -61,7 +65,7 @@ export const EGBlock: React.FC<EGBlockProps> = ({
           }
         />
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

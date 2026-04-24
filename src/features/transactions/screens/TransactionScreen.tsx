@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -14,20 +13,21 @@ import {
   View,
 } from "react-native";
 
+import Animated, {
+  FadeInUp,
+  FadeOutUp,
+  LinearTransition,
+} from "react-native-reanimated";
+import { useKeyboardHeight } from "../../../hooks/useKeyboardHeight";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Category, RecurrenceInterval } from "../../../types";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  LinearTransition,
-} from "react-native-reanimated";
 import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
 // Extracted components
-import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AutoSuggestBlock } from "../components/AutoSuggestBlock";
 import { EGBlock } from "../components/EGBlock";
 
@@ -36,6 +36,8 @@ import { EGBlock } from "../components/EGBlock";
  * It features a "Smart Input" system that parses natural language for rapid entry.
  */
 export default function TransactionScreen() {
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const addTransaction = useStore((state) => state.addTransaction);
@@ -180,13 +182,11 @@ export default function TransactionScreen() {
   const isIncome = type === "income";
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={styles.scrollArea}
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.scrollArea]}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
@@ -266,8 +266,8 @@ export default function TransactionScreen() {
 
           {isRecurring && (
             <Animated.View
-              entering={FadeInDown.duration(300)}
-              exiting={FadeOut.duration(200)}
+              entering={FadeInUp}
+              exiting={FadeOutUp}
               style={styles.intervalPicker}
             >
               {(["daily", "weekly", "monthly"] as const).map((i) => (
@@ -292,7 +292,10 @@ export default function TransactionScreen() {
             </Animated.View>
           )}
 
-          <View style={styles.hintArea}>
+          <Animated.View
+            style={styles.hintArea}
+            layout={LinearTransition.springify()}
+          >
             {showDetails ? (
               <Text style={styles.hintText}>
                 Category:{" "}
@@ -316,12 +319,12 @@ export default function TransactionScreen() {
                 <ChevronDown size={16} color={COLORS.muted} />
               )}
             </TouchableOpacity>
-          </View>
+          </Animated.View>
 
           {showDetails && (
             <Animated.View
-              entering={FadeInDown.duration(400)}
-              exiting={FadeOut.duration(200)}
+              entering={FadeInUp}
+              exiting={FadeOutUp}
               layout={LinearTransition.springify()}
               style={styles.detailsArea}
             >
@@ -399,7 +402,12 @@ export default function TransactionScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom, 16) },
+          ]}
+        >
           <AutoSuggestBlock
             inputText={inputText}
             categories={categories}
@@ -431,123 +439,118 @@ export default function TransactionScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        <Modal
-          visible={createCatModalVisible}
-          transparent
-          animationType="slide"
+      <Modal visible={createCatModalVisible} transparent animationType="slide">
+        <KeyboardAwareView
+          style={styles.modalOverlay}
+          offset={0}
+          useInsets={false}
         >
-          <KeyboardAvoidingView
-            style={styles.modalOverlay}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Custom Category</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Custom Category</Text>
 
-              <TextInput
-                style={styles.fieldInput}
-                value={newCatName}
-                onChangeText={setNewCatName}
-                placeholder="Category Name"
-                placeholderTextColor={COLORS.placeholder}
-              />
+            <TextInput
+              style={styles.fieldInput}
+              value={newCatName}
+              onChangeText={setNewCatName}
+              placeholder="Category Name"
+              placeholderTextColor={COLORS.placeholder}
+            />
 
-              <View style={styles.typeToggle}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleBtn,
-                    newCatType === "expense" && styles.expenseBtnActive,
-                  ]}
-                  onPress={() => setNewCatType("expense")}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      newCatType === "expense" && { color: COLORS.danger },
-                    ]}
-                  >
-                    Expense
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleBtn,
-                    newCatType === "income" && styles.incomeBtnActive,
-                  ]}
-                  onPress={() => setNewCatType("income")}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      newCatType === "income" && { color: COLORS.success },
-                    ]}
-                  >
-                    Income
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.modalSub}>Select Icon</Text>
-              <View style={{ marginBottom: 20 }}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {AVAILABLE_ICONS.map((iconName) => {
-                    const IconComp = getIcon(iconName);
-                    const isSelected = newCatIcon === iconName;
-                    return (
-                      <TouchableOpacity
-                        key={iconName}
-                        style={[
-                          styles.iconSelectBtn,
-                          isSelected && {
-                            borderColor: COLORS.text,
-                            backgroundColor: COLORS.active,
-                          },
-                        ]}
-                        onPress={() => setNewCatIcon(iconName)}
-                      >
-                        <IconComp
-                          size={24}
-                          color={isSelected ? COLORS.text : COLORS.muted}
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-
+            <View style={styles.typeToggle}>
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: COLORS.text }]}
-                onPress={handleCreateCategory}
+                style={[
+                  styles.toggleBtn,
+                  newCatType === "expense" && styles.expenseBtnActive,
+                ]}
+                onPress={() => setNewCatType("expense")}
               >
                 <Text
-                  style={[styles.saveBtnText, { color: COLORS.background }]}
+                  style={[
+                    styles.toggleText,
+                    newCatType === "expense" && { color: COLORS.danger },
+                  ]}
                 >
-                  Create Category
+                  Expense
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ marginTop: 16, alignItems: "center" }}
-                onPress={() => setCreateCatModalVisible(false)}
+                style={[
+                  styles.toggleBtn,
+                  newCatType === "income" && styles.incomeBtnActive,
+                ]}
+                onPress={() => setNewCatType("income")}
               >
                 <Text
-                  style={{
-                    color: COLORS.muted,
-                    fontSize: 16,
-                    fontWeight: "600",
-                  }}
+                  style={[
+                    styles.toggleText,
+                    newCatType === "income" && { color: COLORS.success },
+                  ]}
                 >
-                  Cancel
+                  Income
                 </Text>
               </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
-        </Modal>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+            <Text style={styles.modalSub}>Select Icon</Text>
+            <View style={{ marginBottom: 20 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {AVAILABLE_ICONS.map((iconName) => {
+                  const IconComp = getIcon(iconName);
+                  const isSelected = newCatIcon === iconName;
+                  return (
+                    <TouchableOpacity
+                      key={iconName}
+                      style={[
+                        styles.iconSelectBtn,
+                        isSelected && {
+                          borderColor: COLORS.text,
+                          backgroundColor: COLORS.active,
+                        },
+                      ]}
+                      onPress={() => setNewCatIcon(iconName)}
+                    >
+                      <IconComp
+                        size={24}
+                        color={isSelected ? COLORS.text : COLORS.muted}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: COLORS.text }]}
+              onPress={handleCreateCategory}
+            >
+              <Text style={[styles.saveBtnText, { color: COLORS.background }]}>
+                Create Category
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ marginTop: 16, alignItems: "center" }}
+              onPress={() => setCreateCatModalVisible(false)}
+            >
+              <Text
+                style={{
+                  color: COLORS.muted,
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareView>
+      </Modal>
+    </View>
   );
 }
 
@@ -638,6 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     paddingVertical: 4,
     borderRadius: 12,
+    overflow: "hidden",
   },
   intervalChip: {
     flex: 1,
@@ -670,7 +674,9 @@ const styles = StyleSheet.create({
     marginRight: 4,
     fontSize: 12,
   },
-  detailsArea: {},
+  detailsArea: {
+    overflow: "hidden",
+  },
   catsList: {
     marginBottom: 20,
     flexDirection: "row",
@@ -711,7 +717,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingTop: 16,
-    paddingBottom: Platform.OS === "ios" ? 24 : 16,
     backgroundColor: COLORS.background,
     gap: 16,
   },

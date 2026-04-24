@@ -1,8 +1,6 @@
 import { Plus } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -38,46 +36,43 @@ export default function CategoriesScreen() {
   };
 
   return (
-    <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.container}
-      >
-        <ScrollView style={styles.content}>
-          <View style={styles.listSection}>
-            {categories.map((c) => {
-              const IconComponent = getIcon(c.icon);
-              const isIncome = c.type === "income";
+    <View style={styles.container}>
+      <ScrollView style={styles.content}>
+        <View style={styles.listSection}>
+          {categories.map((c) => {
+            const IconComponent = getIcon(c.icon);
+            const isIncome = c.type === "income";
 
-              return (
-                <View key={c.id} style={styles.row}>
-                  <View
-                    style={[
-                      styles.iconBox,
-                      {
-                        backgroundColor: isIncome
-                          ? COLORS.successBg
-                          : COLORS.active,
-                      },
-                    ]}
-                  >
-                    <IconComponent
-                      size={20}
-                      color={isIncome ? COLORS.success : COLORS.text}
-                    />
-                  </View>
-                  <View style={styles.catInfo}>
-                    <Text style={styles.catName}>{c.name}</Text>
-                    <Text style={styles.catType}>{c.type}</Text>
-                  </View>
+            return (
+              <View key={c.id} style={styles.row}>
+                <View
+                  style={[
+                    styles.iconBox,
+                    {
+                      backgroundColor: isIncome
+                        ? COLORS.successBg
+                        : COLORS.active,
+                    },
+                  ]}
+                >
+                  <IconComponent
+                    size={20}
+                    color={isIncome ? COLORS.success : COLORS.text}
+                  />
                 </View>
-              );
-            })}
-          </View>
-        </ScrollView>
+                <View style={styles.catInfo}>
+                  <Text style={styles.catName}>{c.name}</Text>
+                  <Text style={styles.catType}>{c.type}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
 
+      <View style={{ paddingBottom: Math.max(bottom, 16) }}>
         {isAdding ? (
-          <View style={[styles.addForm, { marginBottom: bottom }]}>
+          <View style={styles.addForm}>
             <TextInput
               style={styles.input}
               placeholder="Category Name"
@@ -102,7 +97,7 @@ export default function CategoriesScreen() {
           </View>
         ) : (
           <TouchableOpacity
-            style={[styles.addBtn, { marginBottom: bottom }]}
+            style={styles.addBtn}
             onPress={() => setIsAdding(true)}
           >
             <View style={styles.addBtnIcon}>
@@ -111,8 +106,8 @@ export default function CategoriesScreen() {
             <Text style={styles.addBtnText}>New Category</Text>
           </TouchableOpacity>
         )}
-      </KeyboardAvoidingView>
-    </>
+      </View>
+    </View>
   );
 }
 
