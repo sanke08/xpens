@@ -11,6 +11,8 @@ interface KeyboardAwareViewProps {
   offset?: number;
   /** Whether to account for the safe area bottom inset when keyboard is closed */
   useInsets?: boolean;
+  /** Whether to disable keyboard avoidance */
+  disabled?: boolean;
 }
 
 /**
@@ -22,11 +24,18 @@ export const KeyboardAwareView: React.FC<KeyboardAwareViewProps> = ({
   style,
   offset = 16,
   useInsets = true,
+  disabled = false,
 }) => {
   const keyboard = useKeyboard();
   const insets = useSafeAreaInsets();
 
   const animatedStyle = useAnimatedStyle(() => {
+    if (disabled) {
+      return {
+        paddingBottom: useInsets ? insets.bottom : 0,
+      };
+    }
+
     const bottomInset = useInsets ? insets.bottom : 0;
     // We use the global keyboard height and compare it with the safe area
     return {

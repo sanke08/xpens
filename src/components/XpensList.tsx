@@ -59,6 +59,7 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
     ({ item, index }: { item: T; index: number }) => {
       let enteringAnimation: any = undefined;
 
+      // Only staggered entering animation for the first 15 items
       if (index < 15) {
         enteringAnimation = itemEntering;
         if (typeof enteringAnimation !== "function") {
@@ -84,12 +85,12 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
     <Animated.View style={wrapperStyle}>
       <FlatList
         {...flatListProps}
-        // Performance defaults optimized for fast scrolling
-        removeClippedSubviews={Platform.OS === "android"}
-        initialNumToRender={15}
-        maxToRenderPerBatch={40}
+        // Disabled removeClippedSubviews to prevent the 1-2s delay during fast scrolling
+        removeClippedSubviews={false}
+        initialNumToRender={40}
+        maxToRenderPerBatch={20}
         windowSize={11}
-        updateCellsBatchingPeriod={50}
+        updateCellsBatchingPeriod={30}
         showsVerticalScrollIndicator={false}
         renderItem={stableRenderItem}
       />

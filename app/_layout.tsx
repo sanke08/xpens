@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -12,6 +12,10 @@ import { COLORS } from "../src/theme/colors";
 
 export default function RootLayout() {
   const { isLoaded, loadData } = useStore();
+  const segments = useSegments();
+
+  // Define routes that should not use global keyboard avoidance
+  const isDisabledRoute = segments[0] === "transactions";
 
   useEffect(() => {
     // Initialize DB synchronously via our Singleton
@@ -42,7 +46,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <StatusBar style="light" />
-        <KeyboardAwareView style={{ flex: 1 }} useInsets={false} offset={0}>
+        <KeyboardAwareView
+          style={{ flex: 1 }}
+          useInsets={false}
+          offset={0}
+          disabled={isDisabledRoute}
+        >
           <Stack
             screenOptions={{
               headerStyle: {
