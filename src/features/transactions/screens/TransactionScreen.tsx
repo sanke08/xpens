@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,7 +17,6 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
-import { useKeyboardHeight } from "../../../hooks/useKeyboardHeight";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Category, RecurrenceInterval } from "../../../types";
@@ -26,7 +24,6 @@ import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
 // Extracted components
-import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AutoSuggestBlock } from "../components/AutoSuggestBlock";
 import { EGBlock } from "../components/EGBlock";
@@ -37,7 +34,6 @@ import { EGBlock } from "../components/EGBlock";
  */
 export default function TransactionScreen() {
   const insets = useSafeAreaInsets();
-  const keyboardHeight = useKeyboardHeight();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const addTransaction = useStore((state) => state.addTransaction);
@@ -182,8 +178,8 @@ export default function TransactionScreen() {
   const isIncome = type === "income";
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={{ flex: 1 }}>
+    <View style={styles.container}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={[styles.scrollArea]}
@@ -405,7 +401,7 @@ export default function TransactionScreen() {
         <View
           style={[
             styles.footer,
-            { paddingBottom: Math.max(insets.bottom, 16) },
+            { paddingBottom: 16 }, // Remove insets.bottom here as global view handles it
           ]}
         >
           <AutoSuggestBlock
@@ -441,13 +437,19 @@ export default function TransactionScreen() {
         </View>
       </View>
 
-      <Modal visible={createCatModalVisible} transparent animationType="slide">
-        <KeyboardAwareView
-          style={styles.modalOverlay}
-          offset={0}
-          useInsets={false}
+      <Modal
+        visible={createCatModalVisible}
+        animationType="slide"
+        backdropColor={"rgba(0,0,0,0.5)"}
+      >
+        <Animated.View
+          style={{ flex: 1, justifyContent: "flex-end" }}
+          layout={LinearTransition.springify()}
         >
-          <View style={styles.modalContent}>
+          <Animated.View
+            style={styles.modalContent}
+            layout={LinearTransition.springify()}
+          >
             <Text style={styles.modalTitle}>Create Custom Category</Text>
 
             <TextInput
@@ -547,8 +549,8 @@ export default function TransactionScreen() {
                 Cancel
               </Text>
             </TouchableOpacity>
-          </View>
-        </KeyboardAwareView>
+          </Animated.View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -740,7 +742,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: Platform.OS === "ios" ? 40 : 24,
   },
   modalTitle: {
     fontSize: 20,
