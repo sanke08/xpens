@@ -93,6 +93,7 @@ function XpensListInner<T extends { id: string }>(props: XpensListProps<T>) {
         updateCellsBatchingPeriod={50}
         showsVerticalScrollIndicator={false}
         renderItem={stableRenderItem}
+        decelerationRate={0.95}
       />
     </View>
   );
