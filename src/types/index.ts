@@ -1,3 +1,21 @@
+export type CaptureSource = "sms" | "clipboard";
+
+export interface CapturedTransaction {
+  id: string;
+  amount: number;
+  type: "income" | "expense";
+  categoryId: string | null;
+  categoryName: string | null;
+  note: string | null;
+  date: number;
+  confidence: number;
+  source: CaptureSource;
+  rawText: string;
+  capturedAt: number;
+  bank: string | null;
+  refNo: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;

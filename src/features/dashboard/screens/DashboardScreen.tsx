@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ChevronRight, Plus, RefreshCcw, Settings } from "lucide-react-native";
+import { ChevronRight, Inbox, Plus, RefreshCcw, Settings } from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
 import {
   FlatList,
@@ -14,6 +14,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BalanceCard } from "../../../components/BalanceCard";
 import { CategorySummaryRow } from "../../../components/CategorySummaryRow";
+import { useCaptureStore } from "../../../store/captureStore";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
@@ -35,6 +36,7 @@ export default function DashboardScreen() {
     (state) => state.deleteRecurringTransaction,
   );
 
+  const pendingCaptures = useCaptureStore((s) => s.pending);
   const { bottom } = useSafeAreaInsets();
   const [animationKey, setAnimationKey] = React.useState(0);
 
@@ -260,6 +262,20 @@ export default function DashboardScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={() => router.push("/inbox" as any)}
+          style={styles.iconActionBtn}
+        >
+          <Inbox size={24} color={pendingCaptures.length > 0 ? COLORS.success : COLORS.text} />
+          {pendingCaptures.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {pendingCaptures.length > 9 ? "9+" : pendingCaptures.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => router.push("/settings")}
           style={styles.iconActionBtn}
         >
@@ -307,6 +323,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.active,
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.success,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: COLORS.background,
   },
   mainAddBtn: {
     flex: 1,

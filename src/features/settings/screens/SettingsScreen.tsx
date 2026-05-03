@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Download, Folder, Shield, Trash2, Upload } from "lucide-react-native";
+import { Download, Folder, MessageSquare, Shield, Trash2, Upload } from "lucide-react-native";
 import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -76,6 +76,17 @@ export default function SettingsScreen() {
               <Upload size={20} color={COLORS.text} />
               <Text style={styles.rowText}>Import Data</Text>
             </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => router.push("/sms-import" as any)}
+          >
+            <View style={styles.rowLeft}>
+              <MessageSquare size={20} color={COLORS.text} />
+              <Text style={styles.rowText}>Import from SMS</Text>
+            </View>
+            <Text style={styles.rowRightText}>Android</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.row} onPress={handleClearData}>
