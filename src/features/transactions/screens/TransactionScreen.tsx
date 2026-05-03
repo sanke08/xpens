@@ -1,5 +1,15 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp } from "lucide-react-native";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CalendarDays,
+  CalendarRange,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Circle,
+  Sunrise,
+} from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
@@ -13,13 +23,18 @@ import {
 } from "react-native";
 
 import Animated, {
+  FadeInDown,
   FadeInUp,
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
-import { Category, RecurrenceInterval } from "../../../types";
+import {
+  Category,
+  RecurrenceInterval,
+  TransactionStatus,
+} from "../../../types";
 import { parseSmartInput } from "../../../utils/smartInput";
 import { AVAILABLE_ICONS, getIcon } from "../../categories/iconMap";
 
@@ -67,6 +82,9 @@ export default function TransactionScreen() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [interval, setInterval] = useState<RecurrenceInterval>("monthly");
 
+  // Pending money state
+  const [status, setStatus] = useState<TransactionStatus>("final");
+
   const [hasInit, setHasInit] = useState(false);
   const textInputRef = useRef<TextInput>(null);
 
@@ -103,6 +121,7 @@ export default function TransactionScreen() {
       if (existingTx.title || existingTx.location || existingTx.withPerson) {
         setShowDetails(true);
       }
+      setStatus(existingTx.status ?? "final");
     } else {
       const defaultExp = categories.find((c) => c.type === "expense");
       if (defaultExp) setSelectedCategory(defaultExp);
@@ -131,7 +150,7 @@ export default function TransactionScreen() {
         setNote(res.note || "");
       }
     }
-  }, [inputText, categories, showDetails, hasInit, existingTx]);
+  }, [inputText, categories, showDetails, hasInit, existingTx, transactions]);
 
   const handleSave = () => {
     const res = parseSmartInput(inputText, categories, transactions);
@@ -148,6 +167,8 @@ export default function TransactionScreen() {
       note: res.note || note || null,
       location: location || null,
       withPerson: withPerson || null,
+      status: status,
+      settledAt: existingTx?.settledAt ?? null,
     };
 
     if (isRecurring) {
@@ -239,76 +260,177 @@ export default function TransactionScreen() {
             multiline
           />
 
-          <View style={styles.recurringToggleRow}>
-            <Text style={styles.recurringLabel}>Automate this expense?</Text>
-            <TouchableOpacity
-              style={[
-                styles.switchTrack,
-                isRecurring && { backgroundColor: COLORS.successBg },
-              ]}
-              onPress={() => setIsRecurring(!isRecurring)}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  styles.switchThumb,
-                  isRecurring && {
-                    transform: [{ translateX: 20 }],
-                    backgroundColor: COLORS.success,
-                  },
-                ]}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {isRecurring && (
-            <Animated.View
-              entering={FadeInUp}
-              exiting={FadeOutUp}
-              style={styles.intervalPicker}
-            >
-              {(["daily", "weekly", "monthly"] as const).map((i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.intervalChip,
-                    interval === i && styles.intervalChipActive,
-                  ]}
-                  onPress={() => setInterval(i)}
-                >
-                  <Text
+          {/* Action pills — tap to cycle Status / Repeat. */}
+          <View style={styles.pillsRow}>
+            {(() => {
+              const states = [
+                {
+                  key: "final",
+                  label: "Final",
+                  Icon: Check,
+                  bg: COLORS.active,
+                  fg: COLORS.muted,
+                },
+                {
+                  key: "pending-receive",
+                  label: "Reimbursable",
+                  Icon: ArrowDownLeft,
+                  bg: COLORS.successBg,
+                  fg: COLORS.success,
+                },
+                {
+                  key: "pending-pay",
+                  label: "I owe",
+                  Icon: ArrowUpRight,
+                  bg: COLORS.dangerBg,
+                  fg: COLORS.danger,
+                },
+              ] as const;
+              const idx = states.findIndex((s) => s.key === status);
+              const meta = states[idx];
+              const StatusIcon = meta.Icon;
+              return (
+                <View style={styles.pillWrapper}>
+                  <Text style={styles.pillLabel}>Status</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
                     style={[
-                      styles.intervalText,
-                      interval === i && styles.intervalTextActive,
+                      styles.summaryPill,
+                      {
+                        backgroundColor: meta.bg,
+                        borderColor: meta.fg + "40",
+                        overflow: "hidden",
+                      },
                     ]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setStatus(states[(idx + 1) % states.length].key);
+                    }}
                   >
-                    {i.charAt(0).toUpperCase() + i.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </Animated.View>
-          )}
+                    <StatusIcon size={13} color={meta.fg} />
+                    <Animated.Text
+                      key={meta.key}
+                      entering={FadeInDown}
+                      exiting={FadeOutUp}
+                      style={[styles.summaryPillText, { color: meta.fg }]}
+                    >
+                      {meta.label}
+                    </Animated.Text>
+                    <View style={styles.pillDots}>
+                      {states.map((_, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.pillDot,
+                            {
+                              backgroundColor:
+                                i === idx ? meta.fg : meta.fg + "30",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+
+            {(() => {
+              const states = [
+                {
+                  key: "once",
+                  label: "One-time",
+                  Icon: Circle,
+                  bg: COLORS.active,
+                  fg: COLORS.muted,
+                },
+                {
+                  key: "daily",
+                  label: "Daily",
+                  Icon: Sunrise,
+                  bg: COLORS.amberBg,
+                  fg: COLORS.amber,
+                },
+                {
+                  key: "weekly",
+                  label: "Weekly",
+                  Icon: CalendarDays,
+                  bg: COLORS.blueBg,
+                  fg: COLORS.blue,
+                },
+                {
+                  key: "monthly",
+                  label: "Monthly",
+                  Icon: CalendarRange,
+                  bg: COLORS.purpleBg,
+                  fg: COLORS.purple,
+                },
+              ] as const;
+              const currentKey = !isRecurring ? "once" : interval;
+              const idx = states.findIndex((s) => s.key === currentKey);
+              const meta = states[idx];
+              const RepeatIcon = meta.Icon;
+              return (
+                <View style={styles.pillWrapper}>
+                  <Text style={styles.pillLabel}>Repeat</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={[
+                      styles.summaryPill,
+                      {
+                        backgroundColor: meta.bg,
+                        borderColor: meta.fg + "40",
+                      },
+                    ]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      const next = states[(idx + 1) % states.length];
+                      if (next.key === "once") {
+                        setIsRecurring(false);
+                      } else {
+                        setIsRecurring(true);
+                        setInterval(next.key as RecurrenceInterval);
+                      }
+                    }}
+                  >
+                    <RepeatIcon size={13} color={meta.fg} />
+                    <Text style={[styles.summaryPillText, { color: meta.fg }]}>
+                      {meta.label}
+                    </Text>
+                    <View style={styles.pillDots}>
+                      {states.map((_, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.pillDot,
+                            {
+                              backgroundColor:
+                                i === idx ? meta.fg : meta.fg + "30",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+          </View>
 
           <Animated.View
             style={styles.hintArea}
             layout={LinearTransition.springify()}
           >
-            {showDetails ? (
-              <Text style={styles.hintText}>
-                Category:{" "}
-                <Text style={{ fontWeight: "700", color: COLORS.text }}>
-                  {selectedCategory?.name || "None"}
-                </Text>
-              </Text>
-            ) : (
-              <View />
-            )}
+            <View />
             <TouchableOpacity
-              onPress={() => setShowDetails((p) => !p)}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowDetails((p) => !p);
+              }}
               style={styles.expandBtn}
             >
               <Text style={styles.expandText}>
-                {showDetails ? "Hide" : "Show"} Details
+                {showDetails ? "Hide" : "More"} Options
               </Text>
               {showDetails ? (
                 <ChevronUp size={16} color={COLORS.muted} />
@@ -325,6 +447,9 @@ export default function TransactionScreen() {
               layout={LinearTransition.springify()}
               style={styles.detailsArea}
             >
+              {/* ── Group: Details ── */}
+              <Text style={styles.groupLabel}>Details</Text>
+
               <View style={styles.catsList}>
                 <ScrollView
                   horizontal
@@ -609,8 +734,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 4,
   },
   recurringToggleRow: {
     flexDirection: "row",
@@ -667,6 +791,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.muted,
   },
+  statusRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  statusChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: COLORS.active,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  statusChipActive: {
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
+  },
+  statusChipReceive: {
+    backgroundColor: COLORS.successBg,
+    borderColor: COLORS.success,
+  },
+  statusChipPay: {
+    backgroundColor: COLORS.dangerBg,
+    borderColor: COLORS.danger,
+  },
+  statusChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.muted,
+  },
+  statusChipTextActive: {
+    color: COLORS.background,
+    fontWeight: "700",
+  },
   expandBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -679,6 +838,65 @@ const styles = StyleSheet.create({
   },
   detailsArea: {
     overflow: "hidden",
+  },
+  pillsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  pillWrapper: {
+    gap: 4,
+    alignSelf: "flex-start",
+    overflow: "hidden",
+  },
+  pillLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: COLORS.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    paddingLeft: 2,
+  },
+  pillDots: {
+    flexDirection: "row",
+    gap: 3,
+    marginLeft: 2,
+  },
+  pillDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  summaryPills: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+    flexWrap: "wrap",
+  },
+  summaryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: COLORS.active,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  summaryPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  groupLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.muted,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 10,
   },
   catsList: {
     marginBottom: 20,

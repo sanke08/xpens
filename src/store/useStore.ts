@@ -27,6 +27,8 @@ interface AppState {
   ) => void;
   updateTransaction: (id: string, t: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
+  settleTransaction: (id: string) => void;
+  settleAllReceivable: () => void;
   addRecurringTransaction: (
     t: Omit<
       RecurringTransaction,
@@ -80,6 +82,8 @@ export const useStore = create<AppState>((set, get) => ({
         categories: allCats,
         transactions: txs.map((t) => ({
           ...t,
+          status: (t.status ?? "final") as Transaction["status"],
+          settledAt: t.settledAt ?? null,
           searchText: computeSearchText(t),
         })),
         recurringTransactions: recurringTxs,
@@ -155,6 +159,8 @@ export const useStore = create<AppState>((set, get) => ({
             date: date,
             createdAt: now,
             updatedAt: now,
+            status: "final",
+            settledAt: null,
           };
           newTx.searchText = computeSearchText(newTx);
           newTransactions.push(newTx);
@@ -176,7 +182,7 @@ export const useStore = create<AppState>((set, get) => ({
         // Save new transactions
         if (newTransactions.length > 0) {
           const insertStmt = db.prepareSync(
-            "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt, status, settledAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
           );
           newTransactions.forEach((tx) => {
             insertStmt.executeSync([
@@ -192,6 +198,8 @@ export const useStore = create<AppState>((set, get) => ({
               tx.date,
               tx.createdAt,
               tx.updatedAt,
+              tx.status,
+              tx.settledAt,
             ]);
           });
           insertStmt.finalizeSync();
@@ -231,6 +239,8 @@ export const useStore = create<AppState>((set, get) => ({
       id,
       createdAt: now,
       updatedAt: now,
+      status: txData.status ?? "final",
+      settledAt: txData.settledAt ?? null,
       searchText: computeSearchText(txData),
     };
 
@@ -238,7 +248,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     const db = dbService.getDb();
     const stmt = db.prepareSync(
-      "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt, status, settledAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     stmt.executeSync([
       tx.id,
@@ -253,6 +263,8 @@ export const useStore = create<AppState>((set, get) => ({
       tx.date,
       tx.createdAt,
       tx.updatedAt,
+      tx.status,
+      tx.settledAt,
     ]);
     stmt.finalizeSync();
   },
@@ -264,6 +276,8 @@ export const useStore = create<AppState>((set, get) => ({
       id: generateId(),
       createdAt: now,
       updatedAt: now,
+      status: t.status ?? "final",
+      settledAt: t.settledAt ?? null,
       searchText: computeSearchText(t),
     }));
 
@@ -277,7 +291,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       db.execSync("BEGIN TRANSACTION;");
       const stmt = db.prepareSync(
-        "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO transactions (id, amount, type, categoryId, categoryName, title, note, location, withPerson, date, createdAt, updatedAt, status, settledAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       );
       newTxs.forEach((tx) => {
         stmt.executeSync([
@@ -293,6 +307,8 @@ export const useStore = create<AppState>((set, get) => ({
           tx.date,
           tx.createdAt,
           tx.updatedAt,
+          tx.status,
+          tx.settledAt,
         ]);
       });
       stmt.finalizeSync();
@@ -315,7 +331,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     const db = dbService.getDb();
     const stmt = db.prepareSync(
-      "UPDATE transactions SET amount=?, type=?, categoryId=?, categoryName=?, title=?, note=?, location=?, withPerson=?, date=?, updatedAt=? WHERE id=?",
+      "UPDATE transactions SET amount=?, type=?, categoryId=?, categoryName=?, title=?, note=?, location=?, withPerson=?, date=?, updatedAt=?, status=?, settledAt=? WHERE id=?",
     );
     stmt.executeSync([
       tx.amount,
@@ -328,9 +344,76 @@ export const useStore = create<AppState>((set, get) => ({
       tx.withPerson,
       tx.date,
       tx.updatedAt,
+      tx.status,
+      tx.settledAt,
       tx.id,
     ]);
     stmt.finalizeSync();
+  },
+
+  settleTransaction: (id) => {
+    const now = Date.now();
+    set((state) => ({
+      transactions: state.transactions.map((t) =>
+        t.id === id
+          ? { ...t, status: "final", settledAt: now, updatedAt: now }
+          : t,
+      ),
+    }));
+    const db = dbService.getDb();
+    db.runSync(
+      "UPDATE transactions SET status='final', settledAt=?, updatedAt=? WHERE id=?",
+      now,
+      now,
+      id,
+    );
+  },
+
+  settleAllReceivable: () => {
+    const now = Date.now();
+    const pending = get().transactions.filter(
+      (t) => t.status === "pending-receive",
+    );
+    if (pending.length === 0) return;
+
+    const total = pending.reduce((s, t) => s + t.amount, 0);
+
+    // Mark them all as final
+    set((state) => ({
+      transactions: state.transactions.map((t) =>
+        t.status === "pending-receive"
+          ? { ...t, status: "final", settledAt: now, updatedAt: now }
+          : t,
+      ),
+    }));
+    const db = dbService.getDb();
+    try {
+      db.execSync("BEGIN TRANSACTION;");
+      const stmt = db.prepareSync(
+        "UPDATE transactions SET status='final', settledAt=?, updatedAt=? WHERE id=?",
+      );
+      pending.forEach((t) => stmt.executeSync([now, now, t.id]));
+      stmt.finalizeSync();
+      db.execSync("COMMIT;");
+    } catch (e) {
+      db.execSync("ROLLBACK;");
+      console.error("Error settling receivables:", e);
+    }
+
+    // Create the matching reimbursement income entry
+    get().addTransaction({
+      amount: total,
+      type: "income",
+      categoryId: null,
+      categoryName: "Reimbursement",
+      title: "Reimbursement",
+      note: `${pending.length} pending item${pending.length !== 1 ? "s" : ""} settled`,
+      location: null,
+      withPerson: null,
+      date: now,
+      status: "final",
+      settledAt: null,
+    });
   },
 
   deleteTransaction: (id) => {

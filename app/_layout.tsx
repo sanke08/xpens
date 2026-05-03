@@ -81,6 +81,7 @@ export default function RootLayout() {
               options={{ title: "Recurring Expenses" }}
             />
             <Stack.Screen name="settings" options={{ title: "Settings" }} />
+            <Stack.Screen name="pending" options={{ title: "Pending" }} />
           </Stack>
       </KeyboardProvider>
     </GestureHandlerRootView>

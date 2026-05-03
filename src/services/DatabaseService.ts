@@ -25,6 +25,18 @@ class DatabaseService {
     return this.db;
   }
 
+  private addColumnIfMissing(table: string, column: string, definition: string) {
+    try {
+      const cols = this.db.getAllSync<{ name: string }>(
+        `PRAGMA table_info(${table});`,
+      );
+      if (cols.some((c) => c.name === column)) return;
+      this.db.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
+    } catch (e) {
+      console.warn(`[DB] addColumnIfMissing failed for ${table}.${column}:`, e);
+    }
+  }
+
   public initDb(): void {
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -49,9 +61,15 @@ class DatabaseService {
         withPerson TEXT,
         date INTEGER NOT NULL,
         createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
+        updatedAt INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'final',
+        settledAt INTEGER
       );
     `);
+
+    // Migration: add status + settledAt columns to existing installs
+    this.addColumnIfMissing("transactions", "status", "TEXT NOT NULL DEFAULT 'final'");
+    this.addColumnIfMissing("transactions", "settledAt", "INTEGER");
 
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS recurring_transactions (
@@ -78,6 +96,7 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
       CREATE INDEX IF NOT EXISTS idx_transactions_categoryId ON transactions(categoryId);
       CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+      CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
       CREATE INDEX IF NOT EXISTS idx_recurring_isActive ON recurring_transactions(isActive);
     `);
 

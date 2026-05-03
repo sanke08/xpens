@@ -83,7 +83,7 @@ export const BalanceCard = React.memo(function BalanceCard({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 12,
     paddingBottom: 12,
     borderRadius: 24,
     borderWidth: 1,

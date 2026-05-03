@@ -76,6 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    marginTop: 8,
   },
   previewLabel: {
     fontSize: 10,
