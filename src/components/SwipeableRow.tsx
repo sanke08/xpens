@@ -26,7 +26,7 @@ function RightAction({
 }) {
   const styleAnimation = useAnimatedStyle(() => {
     return {
-      transform: [{ translateX: drag.value + 100 }], // 100 is the width of the action
+      transform: [{ translateX: drag.value + 100 }],
     };
   });
 
@@ -40,7 +40,7 @@ function RightAction({
   );
 }
 
-export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
+export const SwipeableRow = React.memo(function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
   const renderRightActions = useCallback(
     (
       _progress: SharedValue<number>,
@@ -63,14 +63,17 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
       friction={2}
       rightThreshold={40}
       enableTrackpadTwoFingerGesture
-      containerStyle={{ marginBottom: 10 }}
+      containerStyle={styles.container}
     >
       {children}
     </ReanimatedSwipeable>
   );
-}
+});
 
 const styles = StyleSheet.create({
+  container: {
+    marginBottom: 10,
+  },
   deleteAction: {
     width: 100,
     justifyContent: "center",

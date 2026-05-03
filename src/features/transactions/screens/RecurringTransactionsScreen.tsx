@@ -1,11 +1,10 @@
 import { useRouter } from "expo-router";
 import { Clock, Plus } from "lucide-react-native";
 import React, { useCallback } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SwipeableRow } from "../../../components/SwipeableRow";
-import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { RecurringTransaction } from "../../../types";
@@ -75,10 +74,15 @@ export default function RecurringTransactionsScreen() {
 
   return (
     <>
-      <XpensList
+      <FlatList
         data={recurringTransactions}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={false}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>

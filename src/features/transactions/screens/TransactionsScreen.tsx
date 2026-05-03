@@ -1,8 +1,10 @@
 import { format, isToday, isYesterday } from "date-fns";
 import { useRouter } from "expo-router";
 import { Search as SearchIcon } from "lucide-react-native";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
   StyleSheet,
   Text,
   TextInput,
@@ -13,10 +15,31 @@ import {
 import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
-import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
-import { Transaction } from "../../../types";
+import { Category, Transaction } from "../../../types";
+
+interface TransactionItemProps {
+  transaction: Transaction;
+  category: Category | undefined;
+  onDelete: (id: string) => void;
+  onPress: (id: string) => void;
+}
+
+const TransactionItem = memo(function TransactionItem({
+  transaction,
+  category,
+  onDelete,
+  onPress,
+}: TransactionItemProps) {
+  const handleDelete = useCallback(() => onDelete(transaction.id), [onDelete, transaction.id]);
+  const handlePress = useCallback(() => onPress(transaction.id), [onPress, transaction.id]);
+  return (
+    <SwipeableRow onDelete={handleDelete}>
+      <TransactionRow transaction={transaction} category={category} onPress={handlePress} />
+    </SwipeableRow>
+  );
+});
 
 type FlatListItem =
   | { type: "header"; title: string; id: string }
@@ -33,6 +56,9 @@ export default function TransactionsScreen() {
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
     "all",
   );
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
 
   // Debounce search query to reduce JS thread pressure
   React.useEffect(() => {
@@ -40,21 +66,35 @@ export default function TransactionsScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { filteredData, offsets } = useMemo(() => {
+  // Reset pagination on filter or search change
+  React.useEffect(() => {
+    setPage(1);
+  }, [deferredSearch, filterType]);
+
+  const { filteredData, offsets, hasMore } = useMemo(() => {
     const q = deferredSearch.toLowerCase().trim();
     const flatList: FlatListItem[] = [];
     const itemOffsets: number[] = [];
     let currentOffset = 0;
     let lastDayKey = "";
+    let transactionCount = 0;
+    const limit = page * PAGE_SIZE;
+    let hasMoreTransactions = false;
 
-    const ROW_HEIGHT = 72;
-    const HEADER_HEIGHT = 40;
+    const ROW_HEIGHT = 78;
+    const HEADER_HEIGHT = 48;
 
     for (const t of transactions) {
       if (filterType !== "all" && t.type !== filterType) continue;
 
       if (q) {
         if (!t.searchText?.includes(q)) continue;
+      }
+
+      transactionCount++;
+      if (transactionCount > limit) {
+        hasMoreTransactions = true;
+        break;
       }
 
       const d = new Date(t.date);
@@ -78,8 +118,12 @@ export default function TransactionsScreen() {
       currentOffset += ROW_HEIGHT;
     }
 
-    return { filteredData: flatList, offsets: itemOffsets };
-  }, [transactions, deferredSearch, filterType]);
+    return {
+      filteredData: flatList,
+      offsets: itemOffsets,
+      hasMore: hasMoreTransactions,
+    };
+  }, [transactions, deferredSearch, filterType, page]);
 
   // Optimized O(1) category lookup map
   const categoryMap = useMemo(() => {
@@ -88,11 +132,21 @@ export default function TransactionsScreen() {
     return map;
   }, [categories]);
 
+  const handleDelete = useCallback(
+    (id: string) => deleteTransaction(id),
+    [deleteTransaction],
+  );
+
+  const handlePress = useCallback(
+    (id: string) => router.push(`/transaction?id=${id}` as any),
+    [router],
+  );
+
   const getItemLayout = useCallback(
-    (data: any, index: number) => {
-      const ROW_HEIGHT = 72;
-      const HEADER_HEIGHT = 40;
-      const isHeader = data[index]?.type === "header";
+    (data: ArrayLike<FlatListItem> | null | undefined, index: number) => {
+      const ROW_HEIGHT = 78;
+      const HEADER_HEIGHT = 48;
+      const isHeader = data?.[index]?.type === "header";
 
       return {
         length: isHeader ? HEADER_HEIGHT : ROW_HEIGHT,
@@ -107,30 +161,25 @@ export default function TransactionsScreen() {
     ({ item }: { item: FlatListItem }) => {
       if (item.type === "header") {
         return (
-          <View style={[styles.sectionHeader, { height: 40 }]}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
           </View>
         );
       }
-
       const { transaction } = item;
       const category = transaction.categoryId
         ? categoryMap.get(transaction.categoryId)
         : undefined;
-
       return (
-        <SwipeableRow onDelete={() => deleteTransaction(transaction.id)}>
-          <TransactionRow
-            transaction={transaction}
-            category={category}
-            onPress={() =>
-              router.push(`/transaction?id=${transaction.id}` as any)
-            }
-          />
-        </SwipeableRow>
+        <TransactionItem
+          transaction={transaction}
+          category={category}
+          onDelete={handleDelete}
+          onPress={handlePress}
+        />
       );
     },
-    [deleteTransaction, router, categoryMap],
+    [categoryMap, handleDelete, handlePress],
   );
 
   return (
@@ -170,11 +219,34 @@ export default function TransactionsScreen() {
         ))}
       </View>
 
-      <XpensList
+      <FlatList
         data={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         getItemLayout={getItemLayout}
+        initialNumToRender={20}
+        maxToRenderPerBatch={20}
+        windowSize={20}
+        removeClippedSubviews={false}
+        showsVerticalScrollIndicator={false}
+        decelerationRate={0.9}
+        onEndReached={() => {
+          if (hasMore && !isLoadingMore) {
+            setIsLoadingMore(true);
+            setTimeout(() => {
+              setPage((p) => p + 1);
+              setIsLoadingMore(false);
+            }, 300);
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          <View style={styles.footerContainer}>
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : null}
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No transactions found</Text>
@@ -252,5 +324,10 @@ const styles = StyleSheet.create({
   emptyText: {
     color: COLORS.gray,
     fontSize: 16,
+  },
+  footerContainer: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

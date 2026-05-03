@@ -2,12 +2,11 @@ import { format, isToday, isYesterday } from "date-fns";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import Animated, { LinearTransition } from "react-native-reanimated";
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
-import { XpensList } from "../../../components/XpensList";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Transaction } from "../../../types";
@@ -33,8 +32,8 @@ export default function CategoryDetailScreen() {
     let currentOffset = 0;
     let lastDayKey = "";
 
-    const ROW_HEIGHT = 72;
-    const HEADER_HEIGHT = 40;
+    const ROW_HEIGHT = 78;
+    const HEADER_HEIGHT = 24;
 
     // True O(N) - single pass since transactions are already sorted by date DESC
     for (const t of transactions) {
@@ -68,10 +67,10 @@ export default function CategoryDetailScreen() {
   }, [id, transactions]);
 
   const getItemLayout = useCallback(
-    (data: any, index: number) => {
-      const ROW_HEIGHT = 72;
-      const HEADER_HEIGHT = 40;
-      const isHeader = data[index]?.type === "header";
+    (data: ArrayLike<FlatListItem> | null | undefined, index: number) => {
+      const ROW_HEIGHT = 78;
+      const HEADER_HEIGHT = 24;
+      const isHeader = data?.[index]?.type === "header";
 
       return {
         length: isHeader ? HEADER_HEIGHT : ROW_HEIGHT,
@@ -141,11 +140,17 @@ export default function CategoryDetailScreen() {
         }}
       />
       <Animated.View layout={LinearTransition} style={{ flex: 1 }}>
-        <XpensList
+        <FlatList
           data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           getItemLayout={getItemLayout}
+          initialNumToRender={12}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={false}
+          showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <Animated.View layout={LinearTransition} style={styles.summaryCard}>
               <View
