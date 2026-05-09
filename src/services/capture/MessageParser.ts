@@ -44,13 +44,13 @@ const BANK_SENDERS: Record<string, string> = {
 
 // ─── Regex patterns ──────────────────────────────────────────────────────────
 
-// Matches: Rs.500, Rs 500, INR 500, ₹500, Rs.1,23,456.78
+// Matches: Rs.500, Rs 500, INR 500, ₹500, Rs.1,23,456.78, Amt: 500, Amount 500
 const AMOUNT_RE =
-  /(?:Rs\.?\s*|INR\s*|₹\s*)([\d,]+(?:\.\d{1,2})?)/i;
+  /(?:Rs\.?\s*|INR\s*|₹\s*|Amt\s*[:\-]?\s*|Amount\s*[:\-]?\s*)([\d,]+(?:\.\d{1,2})?)/i;
 
 // Debit keywords
 const DEBIT_RE =
-  /\b(?:debited?|paid|sent|transferred?\s+to|spent|purchase[d]?|payment\s+of|withdrawn?|debit)\b/i;
+  /\b(?:debited?|paid|sent|transferred?\s+to|spent|purchase[d]?|payment\s+of|withdrawn?|debit|payment)\b/i;
 
 // Credit keywords
 const CREDIT_RE =
@@ -58,7 +58,7 @@ const CREDIT_RE =
 
 // UPI reference numbers
 const REF_RE =
-  /(?:UPI\s*Ref(?:\.?\s*No\.?)?\s*[:\-]?\s*|Ref(?:\s*No\.?)?\s*[:\-]?\s*|txn\s*id\s*[:\-]?\s*)(\d{8,})/i;
+  /(?:UPI\s*Ref(?:\.?\s*No\.?)?\s*[:\-]?\s*|Ref(?:\s*No\.?)?\s*[:\-]?\s*|txn\s*id\s*[:\-]?\s*|UTR\s*[:\-]?\s*)(\d{8,})/i;
 
 // Merchant / payee patterns
 const MERCHANT_PATTERNS: RegExp[] = [
@@ -157,9 +157,26 @@ function cleanMerchant(raw: string): string | null {
 
   // Reject noise words that aren't merchants
   const noise = new Set([
-    "your", "the", "this", "has", "been", "is", "was", "are",
-    "account", "acct", "card", "bank", "upi", "ref", "no",
-    "transaction", "txn", "payment", "transfer", "amount",
+    "your",
+    "the",
+    "this",
+    "has",
+    "been",
+    "is",
+    "was",
+    "are",
+    "account",
+    "acct",
+    "card",
+    "bank",
+    "upi",
+    "ref",
+    "no",
+    "transaction",
+    "txn",
+    "payment",
+    "transfer",
+    "amount",
   ]);
 
   const lower = cleaned.toLowerCase();
@@ -193,9 +210,7 @@ function detectBankFromText(text: string): string | null {
 
 function looksLikeTransaction(text: string): boolean {
   // Must have at least one of these signals alongside an amount
-  return (
-    /upi|neft|imps|rtgs|bank|payment|transfer|paid|received/i.test(text)
-  );
+  return /upi|neft|imps|rtgs|bank|payment|transfer|paid|received/i.test(text);
 }
 
 // ─── Quick check: should we even try parsing this SMS? ───────────────────────
@@ -203,14 +218,17 @@ function looksLikeTransaction(text: string): boolean {
 export function isLikelyBankSms(sender: string, text: string): boolean {
   const upperSender = sender.toUpperCase();
 
-  // Known bank sender ID prefixes (Indian format: VM-HDFCBK, AD-ICICIB, etc.)
+  // Known bank sender ID prefixes
   const knownPrefixes = Object.keys(BANK_SENDERS);
   const senderMatch = knownPrefixes.some((p) => upperSender.includes(p));
   if (senderMatch) return true;
 
+  // Emulator/Short-code fallback: 3-6 digit numbers are often banks or services
+  const isShortCode = /^\+?\d{3,6}$/.test(sender);
+  const hasAmount = AMOUNT_RE.test(text);
+
+  if (isShortCode && hasAmount) return true;
+
   // Fallback: text contains bank-like signals
-  return (
-    AMOUNT_RE.test(text) &&
-    (DEBIT_RE.test(text) || CREDIT_RE.test(text))
-  );
+  return AMOUNT_RE.test(text) && (DEBIT_RE.test(text) || CREDIT_RE.test(text));
 }

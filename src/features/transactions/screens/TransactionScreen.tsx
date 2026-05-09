@@ -131,7 +131,7 @@ export default function TransactionScreen() {
         setNote(res.note || "");
       }
     }
-  }, [inputText, categories, showDetails, hasInit, existingTx]);
+  }, [inputText, categories, showDetails, hasInit, existingTx, transactions]);
 
   const handleSave = () => {
     const res = parseSmartInput(inputText, categories, transactions);

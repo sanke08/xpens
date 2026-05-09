@@ -153,7 +153,7 @@ export default function SmsImportScreen() {
         setPhase("done");
       },
     });
-  }, [rangeIndex, categories, transactions]);
+  }, [permission, rangeIndex, categories, transactions]);
 
   // If SMS not available, show immediately
   const smsAvailable = SmsListener.isAvailable();
@@ -285,13 +285,15 @@ export default function SmsImportScreen() {
 
   // ── UI ─────────────────────────────────────────────────────────────────────
 
+  // ── UI ─────────────────────────────────────────────────────────────────────
+
   if (!smsAvailable) {
     return (
       <View style={styles.center}>
         <MessageSquare size={48} color={COLORS.border} />
         <Text style={styles.unavailableTitle}>Not available</Text>
         <Text style={styles.unavailableSub}>
-          SMS import is only supported on Android devices.
+          SMS scanning is unavailable. If you are on an Android emulator, please ensure you are using a Development Build instead of Expo Go.
         </Text>
       </View>
     );

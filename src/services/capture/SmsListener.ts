@@ -7,7 +7,7 @@
  * iOS does NOT allow SMS access — this module is a no-op on iOS.
  */
 
-import { PermissionsAndroid, Platform } from "react-native";
+import { AppState, PermissionsAndroid, Platform } from "react-native";
 import SmsAndroidLib from "react-native-get-sms-android";
 import { isLikelyBankSms, parseMessage, RawCapture } from "./MessageParser";
 
@@ -56,17 +56,19 @@ const processedIds = new Set<string>();
 const importedIds = new Set<string>();
 
 function parseMessages(
-  messages: { _id: string; address: string; body: string; date: string }[],
+  messages: { _id: string; address?: string; body?: string; date: string }[],
   callbacks: CaptureCallback[],
   skipSet: Set<string>,
 ): number {
   let found = 0;
+  if (!messages || !Array.isArray(messages)) return 0;
+
   for (const msg of messages) {
-    if (skipSet.has(msg._id)) continue;
+    if (!msg._id || skipSet.has(msg._id)) continue;
     skipSet.add(msg._id);
 
-    const sender = msg.address ?? "";
-    const body = msg.body ?? "";
+    const sender = msg.address || "";
+    const body = msg.body || "";
 
     if (!isLikelyBankSms(sender, body)) continue;
 
@@ -83,23 +85,40 @@ function parseMessages(
 }
 
 let callbacks: CaptureCallback[] = [];
+let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null =
+  null;
+let pollInterval: any = null;
+let isRunning = false;
 
 export const SmsListener = {
   /**
    * Read the last N messages from the SMS inbox (live capture use).
    * Silently no-ops if READ_SMS permission isn't granted.
    */
-  async readInbox(maxCount = 200) {
+  async readInbox(maxCount = 20) {
     const SmsAndroid = getSmsAndroid();
     if (!SmsAndroid) return;
-    if (!(await hasReadSmsPermission())) return;
 
+    const hasPerm = await hasReadSmsPermission();
+    if (!hasPerm) {
+      console.log("[SmsListener] No READ_SMS permission, skipping inbox check");
+      return;
+    }
+
+    console.log("[SmsListener] Checking inbox for new messages...");
     SmsAndroid.list(
       JSON.stringify({ box: "inbox", maxCount }),
       (fail: string) => console.warn("[SmsListener] Failed to read SMS:", fail),
       (_count: number, smsList: string) => {
         try {
-          parseMessages(JSON.parse(smsList), callbacks, processedIds);
+          const messages =
+            typeof smsList === "string" ? JSON.parse(smsList) : smsList;
+          const found = parseMessages(messages, callbacks, processedIds);
+          if (found > 0) {
+            console.log(
+              `[SmsListener] Found ${found} new bank transactions in inbox`,
+            );
+          }
         } catch (e) {
           console.warn("[SmsListener] Parse error:", e);
         }
@@ -109,7 +128,7 @@ export const SmsListener = {
 
   /**
    * Deep paginated scan for history import (new-user onboarding).
-   * Reads SMS in pages oldest→newest filtered by minDate.
+   * Reads SMS in pages newest → oldest using indexFrom.
    * Does NOT add to the live processedIds set so live capture still works.
    */
   async scanHistory(opts: ScanHistoryOptions) {
@@ -125,7 +144,7 @@ export const SmsListener = {
 
     const {
       fromDate = Date.now() - 365 * 24 * 60 * 60 * 1000,
-      pageSize = 500,
+      pageSize = 100, // Smaller pages for better progress feedback
       onCapture,
       onProgress,
       onDone,
@@ -133,17 +152,14 @@ export const SmsListener = {
 
     let totalScanned = 0;
     let totalFound = 0;
-    // Use a fresh set for import scan — doesn't pollute live processedIds
     const scanSeen = new Set<string>(importedIds);
-    // Re-assign to a const so TypeScript keeps the non-null narrowing inside
-    // the nested scanPage closure (the outer `if (!SmsAndroid)` guard is lost).
     const sms = SmsAndroid;
 
-    function scanPage(minDate: number) {
+    function scanPage(indexFrom: number) {
       const filter = {
         box: "inbox",
+        indexFrom,
         maxCount: pageSize,
-        minDate,
       };
 
       sms.list(
@@ -154,16 +170,37 @@ export const SmsListener = {
         },
         (_count: number, smsList: string) => {
           try {
-            const messages: {
-              _id: string;
-              address: string;
-              body: string;
-              date: string;
-            }[] = JSON.parse(smsList);
+            const messages: any[] =
+              typeof smsList === "string" ? JSON.parse(smsList) : smsList;
+
+            if (
+              !messages ||
+              !Array.isArray(messages) ||
+              messages.length === 0
+            ) {
+              // End of inbox
+              scanSeen.forEach((id) => importedIds.add(id));
+              onDone?.({
+                scanned: totalScanned,
+                found: totalFound,
+                done: true,
+              });
+              return;
+            }
 
             totalScanned += messages.length;
 
-            const found = parseMessages(messages, [onCapture], scanSeen);
+            // Filter by date manually since native lib might ignore it
+            const relevantMessages = messages.filter((m) => {
+              const d = parseInt(m.date, 10);
+              return !isNaN(d) && d >= fromDate;
+            });
+
+            const found = parseMessages(
+              relevantMessages,
+              [onCapture],
+              scanSeen,
+            );
             totalFound += found;
 
             onProgress?.({
@@ -172,25 +209,27 @@ export const SmsListener = {
               done: false,
             });
 
-            // If we got a full page there may be more — paginate by moving
-            // minDate to just after the last message's timestamp
-            if (messages.length === pageSize) {
-              const dates = messages
+            // Check if we should continue:
+            // 1. We got a full page (meaning there's likely more)
+            // 2. The OLDEST message in this page is still newer than our cutoff
+            const oldestInPage = Math.min(
+              ...messages
                 .map((m) => parseInt(m.date, 10))
-                .filter((d) => !isNaN(d));
-              if (dates.length > 0) {
-                const nextMinDate = Math.max(...dates) + 1;
-                if (nextMinDate > minDate) {
-                  scanPage(nextMinDate);
-                  return;
-                }
-              }
-            }
+                .filter((d) => !isNaN(d)),
+            );
 
-            // Done
-            // Mark all scanned IDs as imported so the live inbox won't re-surface them
-            scanSeen.forEach((id) => importedIds.add(id));
-            onDone?.({ scanned: totalScanned, found: totalFound, done: true });
+            if (messages.length === pageSize && oldestInPage >= fromDate) {
+              // Throttle slightly to keep JS thread alive for UI updates
+              setTimeout(() => scanPage(indexFrom + pageSize), 10);
+            } else {
+              // Done
+              scanSeen.forEach((id) => importedIds.add(id));
+              onDone?.({
+                scanned: totalScanned,
+                found: totalFound,
+                done: true,
+              });
+            }
           } catch (e) {
             console.warn("[SmsListener] scanHistory parse error:", e);
             onDone?.({ scanned: totalScanned, found: totalFound, done: true });
@@ -199,13 +238,32 @@ export const SmsListener = {
       );
     }
 
-    scanPage(fromDate);
+    scanPage(0);
   },
 
   start(onCapture: CaptureCallback) {
+    if (callbacks.includes(onCapture)) return;
     callbacks.push(onCapture);
-    // Fire and forget — readInbox is async and self-guards on permission
+
+    if (isRunning) return;
+    isRunning = true;
+
+    // 1. Check immediately on start
     SmsListener.readInbox().catch(() => {});
+
+    // 2. Listen for app coming to foreground
+    appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        SmsListener.readInbox(30).catch(() => {});
+      }
+    });
+
+    // 3. Periodic poll every 60 seconds as a fallback for "real-time" feel
+    pollInterval = setInterval(() => {
+      SmsListener.readInbox(10).catch(() => {});
+    }, 60000);
+
+    console.log("[SmsListener] Started automatic SMS monitoring");
   },
 
   stop(onCapture?: CaptureCallback) {
@@ -213,6 +271,17 @@ export const SmsListener = {
       callbacks = callbacks.filter((cb) => cb !== onCapture);
     } else {
       callbacks = [];
+    }
+
+    if (callbacks.length === 0 && isRunning) {
+      appStateSubscription?.remove();
+      appStateSubscription = null;
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+      isRunning = false;
+      console.log("[SmsListener] Stopped SMS monitoring");
     }
   },
 
