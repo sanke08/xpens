@@ -12,7 +12,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react-native";
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -23,8 +23,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { KeyboardAwareView } from "@/src/components/keyboard/KeyboardAwareView";
+import { scheduleOnRN } from "react-native-worklets";
 import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { useStore } from "../../../store/useStore";
@@ -32,11 +38,17 @@ import { COLORS } from "../../../theme/colors";
 import { Category, Transaction } from "../../../types";
 import { FilterModal, FilterState } from "../components/FilterModal";
 
+// Fixed heights for getItemLayout
+const ITEM_HEIGHT = 78; // 68 height + 10 margin
+const HEADER_HEIGHT = 48;
 interface TransactionItemProps {
   transaction: Transaction;
   category: Category | undefined;
   onDelete: (id: string) => void;
   onPress: (id: string) => void;
+  renderData: FlatListItem extends { type: "transaction"; renderData: infer R }
+    ? R
+    : any;
 }
 
 const TransactionItem = memo(function TransactionItem({
@@ -44,29 +56,63 @@ const TransactionItem = memo(function TransactionItem({
   category,
   onDelete,
   onPress,
+  renderData,
 }: TransactionItemProps) {
-  const handleDelete = useCallback(
-    () => onDelete(transaction.id),
-    [onDelete, transaction.id],
-  );
+  const height = useSharedValue(ITEM_HEIGHT);
+  const opacity = useSharedValue(1);
+
+  const handleDelete = useCallback(() => {
+    height.value = withTiming(0, { duration: 300 });
+    opacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        scheduleOnRN(onDelete, transaction.id);
+      }
+    });
+  }, [onDelete, transaction.id, height, opacity]);
+
   const handlePress = useCallback(
     () => onPress(transaction.id),
     [onPress, transaction.id],
   );
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: height.value,
+    opacity: opacity.value,
+    overflow: "hidden",
+  }));
+
   return (
-    <SwipeableRow onDelete={handleDelete}>
-      <TransactionRow
-        transaction={transaction}
-        category={category}
-        onPress={handlePress}
-      />
-    </SwipeableRow>
+    <Animated.View style={animatedStyle}>
+      <SwipeableRow onDelete={handleDelete}>
+        <TransactionRow
+          transaction={transaction}
+          category={category}
+          onPress={handlePress}
+          renderData={renderData}
+        />
+      </SwipeableRow>
+    </Animated.View>
   );
 });
 
 type FlatListItem =
   | { type: "header"; title: string; id: string }
-  | { type: "transaction"; transaction: Transaction; id: string };
+  | {
+      type: "transaction";
+      transaction: Transaction;
+      id: string;
+      renderData: {
+        primaryText: string;
+        secondaryText: string;
+        displayAmount: string;
+        displayTime: string;
+        isIncome: boolean;
+        icon?: string;
+        amountColor: string;
+        iconBg: string;
+        iconColor: string;
+      };
+    };
 
 const INITIAL_FILTERS: FilterState = {
   status: "all",
@@ -101,22 +147,44 @@ export default function TransactionsScreen() {
     setPage(1);
   }, [deferredSearch, filters]);
 
-  const { filteredData, offsets, hasMore, activeFilterCount } = useMemo(() => {
-    const q = deferredSearch.toLowerCase().trim();
-    const now = new Date();
-    const today = startOfDay(now).getTime();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 }).getTime();
-    const monthStart = startOfMonth(now).getTime();
+  // Optimized O(1) category lookup map
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, Category>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
 
-    // 1. Initial Filtering
+  // Stage 1: Filter and Sort
+  // We avoid creating Date objects inside the filter loop for performance
+  const sortedTransactions = useMemo(() => {
+    const q = deferredSearch.toLowerCase().trim();
+    const nowTimestamp = Date.now();
+    const todayStart = startOfDay(nowTimestamp).getTime();
+    const weekStart = startOfWeek(nowTimestamp, { weekStartsOn: 1 }).getTime();
+    const monthStart = startOfMonth(nowTimestamp).getTime();
+
     let results = transactions.filter((t) => {
-      // Search Text
+      // 1. Search (Most common filter first)
       if (q && !t.searchText?.includes(q)) return false;
 
-      // Status Filter
+      // 2. Status
       if (filters.status !== "all" && t.status !== filters.status) return false;
 
-      // Category Filter
+      // 3. Date Range (Compare timestamps directly, no new Date() objects)
+      if (filters.dateRange !== "all") {
+        const tTime = t.date;
+        if (filters.dateRange === "today") {
+          // Check if timestamp is within today's range
+          if (tTime < todayStart || tTime >= todayStart + 86400000)
+            return false;
+        } else if (filters.dateRange === "week") {
+          if (tTime < weekStart) return false;
+        } else if (filters.dateRange === "month") {
+          if (tTime < monthStart) return false;
+        }
+      }
+
+      // 4. Category
       if (
         filters.categoryIds.length > 0 &&
         (!t.categoryId || !filters.categoryIds.includes(t.categoryId))
@@ -124,19 +192,10 @@ export default function TransactionsScreen() {
         return false;
       }
 
-      // Date Range Filter
-      if (filters.dateRange !== "all") {
-        const tDate = startOfDay(t.date).getTime();
-        if (filters.dateRange === "today" && tDate !== today) return false;
-        if (filters.dateRange === "week" && tDate < weekStart) return false;
-        if (filters.dateRange === "month" && tDate < monthStart) return false;
-      }
-
       return true;
     });
 
-    // 2. Sorting
-    results.sort((a, b) => {
+    return results.sort((a, b) => {
       switch (filters.sortBy) {
         case "date-asc":
           return a.date - b.date;
@@ -144,56 +203,113 @@ export default function TransactionsScreen() {
           return b.amount - a.amount;
         case "amount-asc":
           return a.amount - b.amount;
-        case "date-desc":
         default:
           return b.date - a.date;
       }
     });
+  }, [transactions, deferredSearch, filters]);
 
-    // 3. Pagination & FlatList Preparation
+  // Persistent Cache for UI-Ready Render Data AND the FlatList Objects themselves
+  // This ensures that object references stay stable, preventing FlatList re-renders
+  const renderDataCache = useRef<Map<string, { updatedAt: number; data: any }>>(
+    new Map(),
+  );
+  const listItemCache = useRef<Map<string, FlatListItem>>(new Map());
+
+  // Stage 2: Paginate and Build List Items
+  const { filteredData, hasMore, activeFilterCount, offsets } = useMemo(() => {
     const flatList: FlatListItem[] = [];
     const itemOffsets: number[] = [];
     let currentOffset = 0;
     let lastDayKey = "";
-    let transactionCount = 0;
     const limit = page * PAGE_SIZE;
-    let hasMoreTransactions = false;
+    const hasMoreItems = sortedTransactions.length > limit;
+    const pagedResults = sortedTransactions.slice(0, limit);
 
-    const ROW_HEIGHT = 78;
-    const HEADER_HEIGHT = 48;
-
-    for (const t of results) {
-      transactionCount++;
-      if (transactionCount > limit) {
-        hasMoreTransactions = true;
-        break;
-      }
-
-      // Grouping by date (only if sorted by date)
+    for (const t of pagedResults) {
+      // 1. Handle Headers
       if (filters.sortBy.startsWith("date")) {
+        // Use a simple timestamp math instead of new Date() where possible
+        // but for format() we need a date, so we do it once per header
         const d = new Date(t.date);
         d.setHours(0, 0, 0, 0);
         const dayKey = d.getTime().toString();
 
         if (dayKey !== lastDayKey) {
           lastDayKey = dayKey;
-          const timestamp = Number(dayKey);
-          let title = format(timestamp, "MMM dd, yyyy");
-          if (isToday(timestamp)) title = "Today";
-          else if (isYesterday(timestamp)) title = "Yesterday";
+          const headerId = `header-${dayKey}`;
+          let headerItem = listItemCache.current.get(headerId);
 
-          flatList.push({ type: "header", title, id: `header-${dayKey}` });
+          if (!headerItem) {
+            const timestamp = Number(dayKey);
+            let title = format(timestamp, "MMM dd, yyyy");
+            if (isToday(timestamp)) title = "Today";
+            else if (isYesterday(timestamp)) title = "Yesterday";
+            headerItem = { type: "header", title, id: headerId };
+            listItemCache.current.set(headerId, headerItem);
+          }
+
+          flatList.push(headerItem);
           itemOffsets.push(currentOffset);
           currentOffset += HEADER_HEIGHT;
         }
       }
 
-      flatList.push({ type: "transaction", transaction: t, id: t.id });
+      // 2. Handle Transactions (Check Render Data Cache)
+      const cachedRender = renderDataCache.current.get(t.id);
+      let uiData;
+
+      if (cachedRender && cachedRender.updatedAt === t.updatedAt) {
+        uiData = cachedRender.data;
+      } else {
+        const category = t.categoryId
+          ? categoryMap.get(t.categoryId)
+          : undefined;
+        const isIncome = t.type === "income";
+        const primaryText = t.categoryName || "Uncategorized";
+        let secondaryText = "";
+        if (t.title && t.note) secondaryText = `${t.title} • ${t.note}`;
+        else if (t.title) secondaryText = t.title;
+        else if (t.note) secondaryText = `• ${t.note}`;
+
+        uiData = {
+          primaryText,
+          secondaryText,
+          displayAmount: `${isIncome ? "+" : "-"}₹${t.amount.toLocaleString("en-IN")}`,
+          displayTime: format(t.date, "HH:mm"),
+          isIncome,
+          icon: category?.icon,
+          amountColor: isIncome ? COLORS.success : COLORS.text,
+          iconBg: isIncome ? COLORS.successBg : COLORS.active,
+          iconColor: isIncome ? COLORS.success : COLORS.text,
+        };
+        renderDataCache.current.set(t.id, {
+          updatedAt: t.updatedAt,
+          data: uiData,
+        });
+      }
+
+      // 3. Ensure Stable List Item Reference
+      let transactionItem = listItemCache.current.get(t.id);
+      if (
+        !transactionItem ||
+        transactionItem.type !== "transaction" ||
+        transactionItem.transaction.updatedAt !== t.updatedAt
+      ) {
+        transactionItem = {
+          type: "transaction",
+          transaction: t,
+          id: t.id,
+          renderData: uiData,
+        };
+        listItemCache.current.set(t.id, transactionItem);
+      }
+
+      flatList.push(transactionItem);
       itemOffsets.push(currentOffset);
-      currentOffset += ROW_HEIGHT;
+      currentOffset += ITEM_HEIGHT;
     }
 
-    // Count active filters (excluding default values)
     let count = 0;
     if (filters.status !== "all") count++;
     if (filters.categoryIds.length > 0) count++;
@@ -202,40 +318,36 @@ export default function TransactionsScreen() {
 
     return {
       filteredData: flatList,
-      offsets: itemOffsets,
-      hasMore: hasMoreTransactions,
+      hasMore: hasMoreItems,
       activeFilterCount: count,
+      offsets: itemOffsets,
     };
-  }, [transactions, deferredSearch, filters, page]);
-
-  // Optimized O(1) category lookup map
-  const categoryMap = useMemo(() => {
-    const map = new Map<string, (typeof categories)[0]>();
-    categories.forEach((c) => map.set(c.id, c));
-    return map;
-  }, [categories]);
+  }, [
+    page,
+    sortedTransactions,
+    filters.status,
+    filters.categoryIds.length,
+    filters.dateRange,
+    filters.sortBy,
+    categoryMap,
+  ]);
 
   const handleDelete = useCallback(
     (id: string) => deleteTransaction(id),
     [deleteTransaction],
   );
-
   const handlePress = useCallback(
     (id: string) => router.push(`/transaction?id=${id}` as any),
     [router],
   );
 
+  // Optimized O(1) layout calculation
   const getItemLayout = useCallback(
-    (data: ArrayLike<FlatListItem> | null | undefined, index: number) => {
-      const ROW_HEIGHT = 78;
-      const HEADER_HEIGHT = 48;
-      const isHeader = data?.[index]?.type === "header";
-
-      return {
-        length: isHeader ? HEADER_HEIGHT : ROW_HEIGHT,
-        offset: offsets[index] || 0,
-        index,
-      };
+    (data: any, index: number) => {
+      const height =
+        data[index]?.type === "header" ? HEADER_HEIGHT : ITEM_HEIGHT;
+      const offset = offsets[index] || 0;
+      return { length: height, offset, index };
     },
     [offsets],
   );
@@ -244,7 +356,7 @@ export default function TransactionsScreen() {
     ({ item }: { item: FlatListItem }) => {
       if (item.type === "header") {
         return (
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, { height: HEADER_HEIGHT }]}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
           </View>
         );
@@ -255,10 +367,11 @@ export default function TransactionsScreen() {
         : undefined;
       return (
         <TransactionItem
-          transaction={transaction}
+          transaction={item.transaction}
           category={category}
           onDelete={handleDelete}
           onPress={handlePress}
+          renderData={item.renderData}
         />
       );
     },
@@ -295,7 +408,7 @@ export default function TransactionsScreen() {
             onPress={() => setIsFilterModalVisible(true)}
           >
             <SlidersHorizontal
-              size={20}
+              size={24}
               color={activeFilterCount > 0 ? COLORS.background : COLORS.text}
             />
             {activeFilterCount > 0 && (
@@ -314,16 +427,15 @@ export default function TransactionsScreen() {
         getItemLayout={getItemLayout}
         initialNumToRender={20}
         maxToRenderPerBatch={20}
-        windowSize={10}
+        windowSize={15}
+        decelerationRate={0.93}
         removeClippedSubviews={Platform.OS === "android"}
         showsVerticalScrollIndicator={false}
         onEndReached={() => {
           if (hasMore && !isLoadingMore) {
             setIsLoadingMore(true);
-            setTimeout(() => {
-              setPage((p) => p + 1);
-              setIsLoadingMore(false);
-            }, 300);
+            setPage((p) => p + 1);
+            setTimeout(() => setIsLoadingMore(false), 100);
           }
         }}
         onEndReachedThreshold={0.5}
@@ -394,8 +506,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   filterToggle: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 16,
     backgroundColor: COLORS.card,
     alignItems: "center",
@@ -428,7 +540,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingVertical: 12,
+    justifyContent: "center",
     marginTop: 8,
   },
   sectionTitle: {
