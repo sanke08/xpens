@@ -18,6 +18,14 @@ export const COLORS = {
   danger: "#ef4444",
   dangerBg: "#ef44441f",
 
+  // Recurring interval accents
+  amber: "#f59e0b",
+  amberBg: "#f59e0b1f",
+  blue: "#3b82f6",
+  blueBg: "#3b82f61f",
+  purple: "#a855f7",
+  purpleBg: "#a855f71f",
+
   active: "#262626",
 
   shadow: "#000000",

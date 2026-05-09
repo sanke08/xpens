@@ -24,6 +24,8 @@ export interface Category {
   createdAt: number;
 }
 
+export type TransactionStatus = "final" | "pending-receive" | "pending-pay";
+
 export interface Transaction {
   id: string;
   amount: number;
@@ -37,6 +39,8 @@ export interface Transaction {
   date: number;
   createdAt: number;
   updatedAt: number;
+  status: TransactionStatus;
+  settledAt: number | null;
   searchText?: string;
 }
 

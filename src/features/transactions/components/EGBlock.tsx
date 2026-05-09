@@ -63,6 +63,17 @@ export const EGBlock: React.FC<EGBlockProps> = ({
               createdAt: Date.now(),
             }
           }
+          renderData={{
+            primaryText: categoryName,
+            secondaryText: note,
+            displayAmount: `${type === "income" ? "+" : "-"}₹${amount.toLocaleString("en-IN")}`,
+            displayTime: "Just now",
+            isIncome: type === "income",
+            icon: categoryIcon,
+            amountColor: type === "income" ? COLORS.success : COLORS.text,
+            iconBg: type === "income" ? COLORS.successBg : COLORS.active,
+            iconColor: type === "income" ? COLORS.success : COLORS.text,
+          }}
         />
       </View>
     </Animated.View>
@@ -76,6 +87,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    marginTop: 8,
   },
   previewLabel: {
     fontSize: 10,

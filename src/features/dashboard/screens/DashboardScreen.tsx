@@ -1,5 +1,12 @@
 import { useRouter } from "expo-router";
-import { ChevronRight, Inbox, Plus, RefreshCcw, Settings } from "lucide-react-native";
+import {
+  ChevronRight,
+  Clock,
+  Inbox,
+  Plus,
+  RefreshCcw,
+  Settings,
+} from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
 import {
   FlatList,
@@ -32,13 +39,26 @@ export default function DashboardScreen() {
     (state) => state.addRecurringTransaction,
   );
   const clearAllTransactions = useStore((state) => state.clearAllTransactions);
-  const deleteRecurringTransaction = useStore(
-    (state) => state.deleteRecurringTransaction,
-  );
 
   const pendingCaptures = useCaptureStore((s) => s.pending);
   const { bottom } = useSafeAreaInsets();
   const [animationKey, setAnimationKey] = React.useState(0);
+
+  const pendingSummary = useMemo(() => {
+    let receive = 0;
+    let pay = 0;
+    let count = 0;
+    for (const tx of transactions) {
+      if (tx.status === "pending-receive") {
+        receive += tx.amount;
+        count++;
+      } else if (tx.status === "pending-pay") {
+        pay += tx.amount;
+        count++;
+      }
+    }
+    return { receive, pay, count };
+  }, [transactions]);
 
   const handleReplayAnimation = useCallback(() => {
     setAnimationKey((prev) => prev + 1);
@@ -110,6 +130,8 @@ export default function DashboardScreen() {
         withPerson: null,
         interval: item.interval as any,
         startDate: Date.now(),
+        status: "final",
+        settledAt: null,
       });
     });
   }, [categories, addTransactions, addRecurringTransaction]);
@@ -167,8 +189,37 @@ export default function DashboardScreen() {
 
   const ListHeader = useMemo(
     () => (
-      <>
+      <View style={{ gap: 24 }}>
         <BalanceCard transactions={transactions} />
+
+        {pendingSummary.count > 0 && (
+          <TouchableOpacity
+            style={styles.pendingLine}
+            onPress={() => router.push("/pending" as any)}
+            activeOpacity={0.7}
+          >
+            <Clock size={14} color={COLORS.muted} />
+            <Text style={styles.pendingLineText}>
+              {pendingSummary.receive > 0 && (
+                <Text>
+                  ₹{pendingSummary.receive.toLocaleString("en-IN")}{" "}
+                  <Text style={{ color: COLORS.muted }}>to receive</Text>
+                </Text>
+              )}
+              {pendingSummary.receive > 0 && pendingSummary.pay > 0 && (
+                <Text style={{ color: COLORS.muted }}> · </Text>
+              )}
+              {pendingSummary.pay > 0 && (
+                <Text>
+                  ₹{pendingSummary.pay.toLocaleString("en-IN")}{" "}
+                  <Text style={{ color: COLORS.muted }}>to pay</Text>
+                </Text>
+              )}
+            </Text>
+            <ChevronRight size={14} color={COLORS.muted} />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Categories</Text>
           <TouchableOpacity
@@ -179,9 +230,9 @@ export default function DashboardScreen() {
             <ChevronRight size={14} color={COLORS.white} />
           </TouchableOpacity>
         </View>
-      </>
+      </View>
     ),
-    [transactions, router],
+    [transactions, router, pendingSummary],
   );
 
   const ListFooter = useMemo(
@@ -260,12 +311,14 @@ export default function DashboardScreen() {
           <Plus size={20} color={COLORS.background} />
           <Text style={styles.mainAddText}>Add</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           onPress={() => router.push("/inbox" as any)}
           style={styles.iconActionBtn}
         >
-          <Inbox size={24} color={pendingCaptures.length > 0 ? COLORS.success : COLORS.text} />
+          <Inbox
+            size={24}
+            color={pendingCaptures.length > 0 ? COLORS.success : COLORS.text}
+          />
           {pendingCaptures.length > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -303,6 +356,40 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     gap: 16,
   },
+  pendingLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  pendingLineText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  badge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.success,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: COLORS.background,
+  },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -324,23 +411,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
-  },
-  badge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.success,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 3,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: COLORS.background,
   },
   mainAddBtn: {
     flex: 1,
@@ -383,7 +453,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 20,
