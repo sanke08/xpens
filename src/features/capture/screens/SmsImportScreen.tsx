@@ -196,6 +196,8 @@ export default function SmsImportScreen() {
         location: null,
         withPerson: null,
         date: item.date,
+        status: "final",
+        settledAt: item.date,
       })),
     );
 

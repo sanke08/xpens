@@ -37,6 +37,8 @@ export default function InboxScreen() {
         location: null,
         withPerson: null,
         date: item.date,
+        status: "final",
+        settledAt: item.date,
       });
     },
     [accept, addTransaction],
@@ -55,6 +57,8 @@ export default function InboxScreen() {
         location: null,
         withPerson: null,
         date: item.date,
+        status: "final",
+        settledAt: item.date,
       });
     });
   }, [acceptAll, addTransaction]);
