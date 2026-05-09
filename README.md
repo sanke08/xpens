@@ -1,6 +1,6 @@
 # Rxpense
 
-A personal expense tracker built with React Native and Expo. Dark-themed, offline-first, with a smart natural-language input system.
+A high-performance personal expense tracker built with React Native and Expo. Dark-themed, offline-first, featuring a smart natural-language input system and an ultra-optimized rendering engine.
 
 ---
 
@@ -14,63 +14,44 @@ A personal expense tracker built with React Native and Expo. Dark-themed, offlin
 | Database | expo-sqlite (SQLite) |
 | Animations | react-native-reanimated v4 |
 | Gestures | react-native-gesture-handler |
+| Worklets | react-native-worklets |
 | Icons | lucide-react-native |
 | Dates | date-fns v4 |
 | Language | TypeScript (strict) |
 | Engine | Hermes + New Architecture |
-| React Compiler | Enabled (experimental) |
 
 ---
 
-## Features
+## Core Features
 
-### Smart Input
-Type a freeform string like `200 pizza` and it auto-parses amount, category, and type.
+### 🚀 Extreme Performance Engine
+Designed for lightning-fast responsiveness even with 10,000+ transactions.
+- **O(1) Layout Calculation**: Pre-calculated list offsets eliminate frame drops during scrolling.
+- **Stable Object Caching**: Persistent `useRef` caches for render data and list item references, preventing unnecessary reconciliation.
+- **Zero-Logic Rendering**: All string formatting (currency, dates) and style calculations are offloaded to a background stage, leaving the UI thread 100% free for painting.
+- **Virtualized Optimization**: Optimized `windowSize` and `maxToRenderPerBatch` for zero-flash scrolling.
 
-- **3-tier categorization**: category name fuzzy match → keyword dictionary → past transaction history
-- **Keyword map**: 100+ terms mapped to categories (pizza→Food, uber→Transport, etc.)
-- **Adaptive learning**: learns from your own transaction history over time
-- **Auto type detection**: marks as Income or Expense based on keywords
+### 🔍 Advanced Search & Filters
+- **Smart Search**: Dedicated pre-computed search text field in SQLite for $O(n)$ lightning-fast lookups.
+- **Multi-Stage Pipeline**: Filtering → Sorting → Pagination pipeline ensures expensive calculations only run when data actually changes.
+- **Rich Filters**: Filter by status (Final/Pending), Category, Date Range (Today/Week/Month/Custom), and Sort by Date or Amount.
 
-### Transactions
-- Add/edit transactions via a bottom-sheet modal
-- Optional fields: title, note, location, "with person"
-- Expense / Income toggle
-- Browse all transactions with real-time debounced search (300ms)
-- Filter by All / Expense / Income
-- Grouped by date (Today, Yesterday, formatted date)
-- Pagination — 50 per page, lazy loads on scroll
-- Swipe-to-delete with haptic feedback
+### 🧠 Smart Natural Language Input
+Type freeform strings like `200 pizza with john` and it auto-parses amount, category, and type.
+- **3-tier categorization**: fuzzy match → keyword dictionary → past transaction history.
+- **Keyword map**: 100+ terms mapped to categories (e.g., pizza → Food).
+- **Auto-detection**: Smartly marks entries as Income or Expense based on context.
 
-### Recurring Transactions
-- Convert any transaction to a recurring one (Daily / Weekly / Monthly)
-- Auto-generated on app load — creates all due entries up to today
-- Pause/resume support
-- Max 365 occurrences generated per run to prevent runaway inserts
-- Manage via dedicated Recurring screen
+### ⏳ Pending Payments (Lend/Borrow)
+Manage transactions that aren't yet "Final" with a dedicated Pending management system.
+- **Pending-Receive**: Track money people owe you.
+- **Pending-Pay**: Track money you owe others.
+- **Settlement**: One-tap settlement to convert pending entries into final transactions.
 
-### Categories
-- 12 default categories: Food, Groceries, Transport, Rent, Utilities, Entertainment, Shopping, Health, Travel, Salary, Business, Other
-- Create custom categories with name, type (Expense/Income), and icon
-- 16 lucide icons to choose from
-- Category detail view: all transactions in that category, grouped by date
-
-### Dashboard
-- Balance card: total balance, total income, total expenses, today's net
-- Category breakdown sorted by amount spent
-- Navigate to any category's transaction history
-
-### Settings
-- Link to manage categories
-- Export / Import data (UI present, partially implemented — see roadmap)
-- Clear all data
-
-### UI / UX
-- Dark theme throughout
-- Animated list entrances (FadeInDown / FadeInUp)
-- Smooth keyboard-aware layout via Reanimated
-- Safe area handling
-- Indian Rupee (₹) locale formatting
+### 🔄 Recurring Transactions
+- **Auto-generation**: Creates due entries on app load (Daily/Weekly/Monthly).
+- **Safety Limits**: Prevents runaway inserts with occurrence caps.
+- **Pause/Resume**: Full control over automated entry generation.
 
 ---
 
@@ -78,13 +59,13 @@ Type a freeform string like `200 pizza` and it auto-parses amount, category, and
 
 | Screen | Route | Description |
 |--------|-------|-------------|
-| Dashboard | `/` | Overview: balance card + category summaries |
-| Add/Edit Transaction | `/transaction` | Modal sheet for creating or editing a transaction |
-| All Transactions | `/transactions` | Searchable, filterable, paginated transaction list |
-| Recurring | `/recurring` | Manage automated recurring transactions |
-| Categories | `/categories` | View all categories, create new ones |
-| Category Detail | `/category/[id]` | All transactions for a specific category |
-| Settings | `/settings` | App configuration and data management |
+| Dashboard | `/` | Overview: Balance card, pending summaries, and category spend. |
+| Add/Edit | `/transaction` | Smart input modal for creating or editing entries. |
+| Transactions | `/transactions` | The primary list view with advanced search and high-speed scrolling. |
+| Pending | `/pending` | Management for lend/borrow (Pay/Receive) transactions. |
+| Recurring | `/recurring` | Manage automated recurring transactions. |
+| Categories | `/categories` | View all categories and create custom ones. |
+| Category Detail| `/category/[id]` | Optimized view of all transactions in a specific category. |
 
 ---
 
@@ -95,76 +76,36 @@ app/                        # Expo Router file-based routes
 ├── _layout.tsx             # Root stack navigator + app init
 ├── index.tsx               # Redirect → Dashboard
 ├── transaction.tsx         # Add/Edit modal
-├── transactions.tsx        # All transactions
+├── transactions.tsx        # Optimized All transactions list
+├── pending.tsx             # Pending payments management
 ├── recurring/index.tsx     # Recurring management
-├── categories.tsx          # Categories list
-├── category/[id].tsx       # Category detail
-└── settings.tsx            # Settings
+└── category/[id].tsx       # Category detail view
 
 src/
-├── components/             # Shared UI components
-│   ├── BalanceCard.tsx
-│   ├── TransactionRow.tsx
-│   ├── CategorySummaryRow.tsx
-│   ├── SwipeableRow.tsx
-│   └── keyboard/KeyboardAwareView.tsx
+├── components/             # Shared UI components (TransactionRow, SwipeableRow)
 ├── features/
-│   ├── dashboard/screens/DashboardScreen.tsx
-│   ├── transactions/
-│   │   ├── screens/TransactionScreen.tsx
-│   │   ├── screens/TransactionsScreen.tsx
-│   │   ├── screens/RecurringTransactionsScreen.tsx
-│   │   ├── components/AutoSuggestBlock.tsx   # Category suggestions
-│   │   └── components/EGBlock.tsx            # Live parse preview
-│   ├── categories/
-│   │   ├── screens/CategoriesScreen.tsx
-│   │   ├── screens/CategoryDetailScreen.tsx
-│   │   ├── categoryKeywords.ts               # Keyword→category map
-│   │   └── iconMap.ts                        # Icon name→component map
-│   └── settings/screens/SettingsScreen.tsx
-├── services/
-│   └── DatabaseService.ts  # SQLite singleton (CRUD + indices)
-├── store/
-│   └── useStore.ts         # Zustand store (categories, transactions, recurring)
-├── types/
-│   └── index.ts            # TypeScript types
-├── theme/
-│   └── colors.ts           # Dark theme color palette
-└── utils/
-    ├── smartInput.ts       # Natural language parser
-    └── id.ts               # ID generation
+│   ├── dashboard/          # Balance & Analytics
+│   ├── transactions/       # Search, Filters, and List Logic
+│   ├── pending/            # Lend/Borrow management
+│   └── categories/         # Category management & Keyword maps
+├── services/               # DatabaseService (SQLite CRUD)
+├── store/                  # Zustand global state
+├── theme/                  # COLORS palette
+└── utils/                  # smartInput parser & date helpers
 ```
 
 ---
 
-## Database Schema
+## Roadmap
 
-Three SQLite tables, created on first launch:
-
-```sql
-categories (id, name, icon, type, createdAt)
-transactions (id, amount, type, categoryId, title, note, location, withPerson, date, searchText, createdAt)
-recurring_transactions (id, amount, type, categoryId, title, note, interval, isActive, lastGeneratedDate, createdAt)
-```
-
-Indices on: `transactions.date`, `transactions.categoryId`, `transactions.type`, `recurring_transactions.isActive`.
-
----
-
-## Roadmap / Not Yet Implemented
-
-| Feature | Status |
-|---------|--------|
-| Export data to file (JSON/CSV) | UI exists, no file system write |
-| Import data from file | Button exists, not wired up |
-| Edit/delete categories | Create only |
-| Edit existing recurring transactions | Delete only |
-| Transaction date picker | Hardcoded to current time |
-| App lock (biometrics/PIN) | Setting stub, not implemented |
-| Charts / spending trends | Not started |
-| Push notifications for recurring | Not started |
-| Multi-currency support | Hardcoded ₹ |
-| Cloud sync / backup | Not started |
+- [x] Extreme Performance List Engine
+- [x] Advanced Multi-category Filtering
+- [x] Pending Payment Settlement System
+- [ ] Export/Import Data (CSV/JSON)
+- [ ] Transaction Date Picker (Manual override)
+- [ ] Interactive Spending Charts
+- [ ] Cloud Sync (Supabase/Firebase)
+- [ ] Biometric App Lock
 
 ---
 
@@ -177,21 +118,9 @@ pnpm install
 # Start dev server
 pnpm expo start
 
-# Run on Android
+# Run on Android/iOS
 pnpm expo run:android
-
-# Run on iOS
 pnpm expo run:ios
 ```
 
-Requires Node 18+, pnpm, and Expo CLI. For device builds, Android Studio or Xcode is needed.
-
----
-
-## Debug Utilities
-
-The Dashboard footer contains three debug-only buttons (visible in dev):
-
-- **+30 Data** — Seeds 30 random transactions + 4 recurring entries
-- **Replay** — Re-triggers list entrance animations
-- **Clear All** — Wipes all transactions and recurring items
+Requires Node 18+, pnpm, and Expo CLI.

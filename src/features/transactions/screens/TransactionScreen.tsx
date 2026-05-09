@@ -380,6 +380,7 @@ export default function TransactionScreen() {
                       {
                         backgroundColor: meta.bg,
                         borderColor: meta.fg + "40",
+                        overflow: "hidden",
                       },
                     ]}
                     onPress={() => {
@@ -394,9 +395,14 @@ export default function TransactionScreen() {
                     }}
                   >
                     <RepeatIcon size={13} color={meta.fg} />
-                    <Text style={[styles.summaryPillText, { color: meta.fg }]}>
+                    <Animated.Text
+                      key={meta.key}
+                      entering={FadeInDown}
+                      exiting={FadeOutUp}
+                      style={[styles.summaryPillText, { color: meta.fg }]}
+                    >
                       {meta.label}
-                    </Text>
+                    </Animated.Text>
                     <View style={styles.pillDots}>
                       {states.map((_, i) => (
                         <View
