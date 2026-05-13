@@ -44,6 +44,8 @@ interface AppState {
   addCategory: (c: Omit<Category, "id" | "createdAt">) => void;
   updateCategory: (id: string, c: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
+  backupFolderUri: string | null;
+  setBackupFolderUri: (uri: string | null) => void;
   clearAllTransactions: () => void;
 }
 
@@ -58,6 +60,7 @@ export const useStore = create<AppState>((set, get) => ({
   categories: [],
   transactions: [],
   recurringTransactions: [],
+  backupFolderUri: null,
   isLoaded: false,
 
   loadData: () => {
@@ -72,6 +75,10 @@ export const useStore = create<AppState>((set, get) => ({
       const recurringTxs = db.getAllSync<RecurringTransaction>(
         "SELECT * FROM recurring_transactions ORDER BY createdAt DESC;",
       );
+      
+      // Load settings
+      db.execSync("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);");
+      const backupUriRow = db.getFirstSync<{ value: string }>("SELECT value FROM settings WHERE key = 'backupFolderUri'");
 
       const uniqueCats = new Map<string, Category>();
       defaultCategories.forEach((c) => uniqueCats.set(c.name.toLowerCase(), c));
@@ -87,6 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
           searchText: computeSearchText(t),
         })),
         recurringTransactions: recurringTxs,
+        backupFolderUri: backupUriRow ? backupUriRow.value : null,
         isLoaded: true,
       });
 
@@ -96,6 +104,13 @@ export const useStore = create<AppState>((set, get) => ({
       console.error("Error loading data", e);
       set({ isLoaded: true });
     }
+  },
+
+  setBackupFolderUri: (uri) => {
+    set({ backupFolderUri: uri });
+    const db = dbService.getDb();
+    db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('backupFolderUri', ?)", uri);
+    dbService.backupDatabase(uri);
   },
 
   processRecurringTransactions: () => {
@@ -225,6 +240,8 @@ export const useStore = create<AppState>((set, get) => ({
             (rt) => updatedRecurring.find((u) => u.id === rt.id) || rt,
           ),
         }));
+        // Backup after processing
+        dbService.backupDatabase(get().backupFolderUri);
       } catch (err) {
         console.error("Error processing recurring transactions:", err);
       }
@@ -267,6 +284,7 @@ export const useStore = create<AppState>((set, get) => ({
       tx.settledAt,
     ]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   addTransactions: (txsData) => {
@@ -313,6 +331,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
       stmt.finalizeSync();
       db.execSync("COMMIT;");
+      dbService.backupDatabase(get().backupFolderUri);
     } catch (e) {
       db.execSync("ROLLBACK;");
       console.error("Error adding batch transactions", e);
@@ -349,6 +368,7 @@ export const useStore = create<AppState>((set, get) => ({
       tx.id,
     ]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   settleTransaction: (id) => {
@@ -367,6 +387,7 @@ export const useStore = create<AppState>((set, get) => ({
       now,
       id,
     );
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   settleAllReceivable: () => {
@@ -414,6 +435,7 @@ export const useStore = create<AppState>((set, get) => ({
       status: "final",
       settledAt: null,
     });
+    // addTransaction already calls backupDatabase
   },
 
   deleteTransaction: (id) => {
@@ -422,6 +444,7 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     const db = dbService.getDb();
     db.runSync("DELETE FROM transactions WHERE id = ?", id);
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   addRecurringTransaction: (rtData) => {
@@ -462,6 +485,7 @@ export const useStore = create<AppState>((set, get) => ({
       rt.updatedAt,
     ]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
 
     get().processRecurringTransactions();
   },
@@ -496,6 +520,7 @@ export const useStore = create<AppState>((set, get) => ({
       rt.id,
     ]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   deleteRecurringTransaction: (id) => {
@@ -506,6 +531,7 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     const db = dbService.getDb();
     db.runSync("DELETE FROM recurring_transactions WHERE id = ?", id);
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   addCategory: (catData) => {
@@ -521,6 +547,7 @@ export const useStore = create<AppState>((set, get) => ({
     );
     stmt.executeSync([cat.id, cat.name, cat.icon, cat.type, cat.createdAt]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   updateCategory: (id, updates) => {
@@ -539,6 +566,7 @@ export const useStore = create<AppState>((set, get) => ({
     );
     stmt.executeSync([cat.name, cat.icon, cat.type, cat.id]);
     stmt.finalizeSync();
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   deleteCategory: (id) => {
@@ -547,6 +575,7 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     const db = dbService.getDb();
     db.runSync("DELETE FROM categories WHERE id = ?", id);
+    dbService.backupDatabase(get().backupFolderUri);
   },
 
   clearAllTransactions: () => {
@@ -554,5 +583,6 @@ export const useStore = create<AppState>((set, get) => ({
     const db = dbService.getDb();
     db.runSync("DELETE FROM transactions;");
     db.runSync("DELETE FROM recurring_transactions;");
+    dbService.backupDatabase();
   },
 }));

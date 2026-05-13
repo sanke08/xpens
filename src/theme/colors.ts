@@ -27,6 +27,10 @@ export const COLORS = {
   purpleBg: "#a855f71f",
 
   active: "#262626",
+  primary: "#3b82f6",
+  textSecondary: "#A3A3A3",
+  textTertiary: "#737373",
+  surface: "#121212",
 
   shadow: "#000000",
 

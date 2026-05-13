@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Rxpense",
-    "slug": "Rxpense",
+    "name": "xpens",
+    "slug": "xpens",
+    "owner": "sanke08",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -23,7 +24,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.anonymous.Rxpense"
+      "package": "com.sanke08.xpens"
     },
     "web": {
       "output": "static",
@@ -48,12 +49,13 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.facebook.react.turbomodule.** { *; }"
           }
         }
       ],
-      "expo-sqlite",
-      "expo-build-properties"
+      "./plugins/withFragileUserData",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

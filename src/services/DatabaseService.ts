@@ -1,4 +1,6 @@
-import * as SQLite from "expo-sqlite";
+import { openDatabaseSync, type SQLiteDatabase } from "expo-sqlite";
+import { Paths, File } from "expo-file-system";
+import { StorageAccessFramework } from "expo-file-system/legacy";
 import { generateId } from "../utils/id";
 
 /**
@@ -8,10 +10,11 @@ import { generateId } from "../utils/id";
  */
 class DatabaseService {
   private static instance: DatabaseService;
-  private db: SQLite.SQLiteDatabase;
+  private db: SQLiteDatabase;
+  private readonly DB_NAME = "rxpense.db";
 
   private constructor() {
-    this.db = SQLite.openDatabaseSync("rxpense.db");
+    this.db = openDatabaseSync(this.DB_NAME);
   }
 
   public static getInstance(): DatabaseService {
@@ -21,8 +24,60 @@ class DatabaseService {
     return DatabaseService.instance;
   }
 
-  public getDb(): SQLite.SQLiteDatabase {
+  public getDb(): SQLiteDatabase {
     return this.db;
+  }
+
+  /**
+   * Performs an automatic backup of the database to the internal document directory
+   * and attempts to sync it to a public folder if a URI is provided.
+   */
+  public async backupDatabase(publicFolderUri?: string | null): Promise<void> {
+    try {
+      const documentDir = Paths.document.uri;
+      if (!documentDir) {
+        console.warn("[DB] Backup aborted: documentDirectory is null");
+        return;
+      }
+      const dbPath = `${documentDir}SQLite/${this.DB_NAME}`;
+      const internalBackupPath = `${documentDir}xpens_backup.db`;
+      
+      // 1. Internal backup (Standard safety)
+      const dbFile = new File(dbPath);
+      if (dbFile.exists) {
+        dbFile.copy(new File(internalBackupPath));
+      }
+
+      // 2. Persistent Public Backup (Survives Uninstall)
+      if (publicFolderUri) {
+        try {
+          const base64 = await dbFile.base64();
+          const fileName = "xpens_backup.db";
+          
+          // Check if file already exists in that folder to overwrite it
+          const files = await StorageAccessFramework.readDirectoryAsync(publicFolderUri);
+          const existingFile = files.find((f: string) => f.endsWith(fileName));
+          
+          let targetUri = existingFile;
+          if (!targetUri) {
+            targetUri = await StorageAccessFramework.createFileAsync(
+              publicFolderUri,
+              fileName,
+              "application/octet-stream"
+            );
+          }
+          
+          await StorageAccessFramework.writeAsStringAsync(targetUri, base64, {
+            encoding: "base64",
+          });
+          console.log("[DB] Persistent backup updated at:", targetUri);
+        } catch (safError) {
+          console.warn("[DB] Public SAF backup failed:", safError);
+        }
+      }
+    } catch (e) {
+      console.warn("[DB] Backup failed:", e);
+    }
   }
 
   private addColumnIfMissing(table: string, column: string, definition: string) {
@@ -134,6 +189,9 @@ class DatabaseService {
       }
       statement.finalizeSync();
     }
+    
+    // Trigger an initial backup
+    this.backupDatabase();
   }
 }
 

@@ -25,6 +25,7 @@ import { useCaptureStore } from "../../../store/captureStore";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
 import { Category } from "../../../types";
+import { BackupSetupBanner } from "../../../components/BackupSetupBanner";
 
 /**
  * DashboardScreen - The main overview page.
@@ -190,6 +191,7 @@ export default function DashboardScreen() {
   const ListHeader = useMemo(
     () => (
       <View style={{ gap: 24 }}>
+        <BackupSetupBanner />
         <BalanceCard transactions={transactions} />
 
         {pendingSummary.count > 0 && (
@@ -269,14 +271,14 @@ export default function DashboardScreen() {
 
   return (
     <View style={{ flex: 1 }} key={animationKey}>
-      {ListFooter}
+      {/* {ListFooter} */}
       <FlatList
         key={`list-${animationKey}`}
         data={categorySummaries}
         keyExtractor={(item) => item.category.id}
         renderItem={renderItem}
         ListHeaderComponent={ListHeader}
-        ListFooterComponent={ListFooter}
+        // ListFooterComponent={ListFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No recent transactions found</Text>
