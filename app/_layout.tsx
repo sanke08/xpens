@@ -5,7 +5,6 @@ import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { KeyboardProvider } from "../src/components/keyboard/KeyboardAwareView";
-import { ClipboardWatcher } from "../src/services/capture/ClipboardWatcher";
 import { RawCapture } from "../src/services/capture/MessageParser";
 import { SmsListener } from "../src/services/capture/SmsListener";
 import { dbService } from "../src/services/DatabaseService";
@@ -14,34 +13,31 @@ import { useStore } from "../src/store/useStore";
 import { COLORS } from "../src/theme/colors";
 
 export default function RootLayout() {
-  const { isLoaded, loadData } = useStore();
+  const { isLoaded, initializeStore } = useStore();
   const categories = useStore((s) => s.categories);
-  const transactions = useStore((s) => s.transactions);
   const onRawCapture = useCaptureStore((s) => s.onRawCapture);
 
   const handleCapture = useCallback(
     (raw: RawCapture) => {
-      onRawCapture(raw, { categories, recentTransactions: transactions });
+      onRawCapture(raw, { categories, recentTransactions: [] });
     },
-    [onRawCapture, categories, transactions],
+    [onRawCapture, categories],
   );
 
   useEffect(() => {
     try {
       dbService.initDb();
-      loadData();
-    } catch (e) {
-      console.error(e);
+      initializeStore();
+    } catch {
+      // console.error(e);
     }
-  }, [loadData]);
+  }, [initializeStore]);
 
   // Start capture engine after data is loaded
   useEffect(() => {
     if (!isLoaded) return;
-    ClipboardWatcher.start(handleCapture);
     SmsListener.start(handleCapture);
     return () => {
-      ClipboardWatcher.stop(handleCapture);
       SmsListener.stop(handleCapture);
     };
   }, [isLoaded, handleCapture]);

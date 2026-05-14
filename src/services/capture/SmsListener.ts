@@ -101,26 +101,26 @@ export const SmsListener = {
 
     const hasPerm = await hasReadSmsPermission();
     if (!hasPerm) {
-      console.log("[SmsListener] No READ_SMS permission, skipping inbox check");
+      // console.log("[SmsListener] No READ_SMS permission, skipping inbox check");
       return;
     }
 
-    console.log("[SmsListener] Checking inbox for new messages...");
+    // console.log("[SmsListener] Checking inbox for new messages...");
     SmsAndroid.list(
       JSON.stringify({ box: "inbox", maxCount }),
-      (fail: string) => console.warn("[SmsListener] Failed to read SMS:", fail),
+      (fail: string) => {}, //console.warn("[SmsListener] Failed to read SMS:", fail),
       (_count: number, smsList: string) => {
         try {
           const messages =
             typeof smsList === "string" ? JSON.parse(smsList) : smsList;
           const found = parseMessages(messages, callbacks, processedIds);
           if (found > 0) {
-            console.log(
-              `[SmsListener] Found ${found} new bank transactions in inbox`,
-            );
+            // console.log(
+            //   `[SmsListener] Found ${found} new bank transactions in inbox`,
+            // );
           }
         } catch (e) {
-          console.warn("[SmsListener] Parse error:", e);
+          // console.warn("[SmsListener] Parse error:", e);
         }
       },
     );
@@ -165,7 +165,7 @@ export const SmsListener = {
       sms.list(
         JSON.stringify(filter),
         (fail: string) => {
-          console.warn("[SmsListener] scanHistory page error:", fail);
+          // console.warn("[SmsListener] scanHistory page error:", fail);
           onDone?.({ scanned: totalScanned, found: totalFound, done: true });
         },
         (_count: number, smsList: string) => {
@@ -231,7 +231,7 @@ export const SmsListener = {
               });
             }
           } catch (e) {
-            console.warn("[SmsListener] scanHistory parse error:", e);
+            // console.warn("[SmsListener] scanHistory parse error:", e);
             onDone?.({ scanned: totalScanned, found: totalFound, done: true });
           }
         },
@@ -263,7 +263,7 @@ export const SmsListener = {
       SmsListener.readInbox(10).catch(() => {});
     }, 60000);
 
-    console.log("[SmsListener] Started automatic SMS monitoring");
+    // console.log("[SmsListener] Started automatic SMS monitoring");
   },
 
   stop(onCapture?: CaptureCallback) {
@@ -281,7 +281,7 @@ export const SmsListener = {
         pollInterval = null;
       }
       isRunning = false;
-      console.log("[SmsListener] Stopped SMS monitoring");
+      // console.log("[SmsListener] Stopped SMS monitoring");
     }
   },
 

@@ -20,13 +20,14 @@ import { getIcon } from "../iconMap";
  */
 export default function CategoriesScreen() {
   const { bottom } = useSafeAreaInsets();
-  const { categories, addCategory } = useStore();
+  const categories = useStore((state) => state.categories);
+  const createCategory = useStore((state) => state.createCategory);
   const [newCatName, setNewCatName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
   const handleSave = () => {
     if (!newCatName.trim()) return;
-    addCategory({
+    createCategory({
       name: newCatName.trim(),
       icon: "folder",
       type: "expense",

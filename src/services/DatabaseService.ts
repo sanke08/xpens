@@ -1,12 +1,11 @@
-import { openDatabaseSync, type SQLiteDatabase } from "expo-sqlite";
-import { Paths, File } from "expo-file-system";
+import { Directory, File, Paths } from "expo-file-system";
 import { StorageAccessFramework } from "expo-file-system/legacy";
-import { generateId } from "../utils/id";
+import { openDatabaseSync, type SQLiteDatabase } from "expo-sqlite";
+import { defaultCategories } from "../features/categories/categoryKeywords";
 
 /**
- * DatabaseService implements the Singleton pattern.
- * It manages the SQLite database connection and initialization,
- * ensuring only one instance accesses the database directly.
+ * DatabaseService handles SQLite operations and automated backups.
+ * Features a high-integrity Semantic Merge engine.
  */
 class DatabaseService {
   private static instance: DatabaseService;
@@ -28,67 +27,133 @@ class DatabaseService {
     return this.db;
   }
 
+  private getDbFile(): File {
+    return new File(Paths.document.uri, `SQLite/${this.DB_NAME}`);
+  }
+
   /**
-   * Performs an automatic backup of the database to the internal document directory
-   * and attempts to sync it to a public folder if a URI is provided.
+   * Smart Merge: Combines backup data into the current database without overwriting.
+   * Fixed: Now correctly handles raw file paths for the ATTACH command.
    */
-  public async backupDatabase(publicFolderUri?: string | null): Promise<void> {
+  public async mergeFromPublicFolder(publicFolderUri: string): Promise<boolean> {
+    const TEMP_DB_NAME = "temp_restore.db";
+    
     try {
-      const documentDir = Paths.document.uri;
-      if (!documentDir) {
-        console.warn("[DB] Backup aborted: documentDirectory is null");
-        return;
-      }
-      const dbPath = `${documentDir}SQLite/${this.DB_NAME}`;
-      const internalBackupPath = `${documentDir}xpens_backup.db`;
+      const fileName = "xpens_backup.db";
+      const files = await StorageAccessFramework.readDirectoryAsync(publicFolderUri);
+      const backupFileUri = files.find((f: string) => f.includes(fileName));
+
+      if (!backupFileUri) return false;
+
+      // 1. Download backup to a temporary local file in the SQLite directory
+      const base64 = await StorageAccessFramework.readAsStringAsync(backupFileUri, {
+        encoding: "base64",
+      });
       
-      // 1. Internal backup (Standard safety)
-      const dbFile = new File(dbPath);
-      if (dbFile.exists) {
-        dbFile.copy(new File(internalBackupPath));
+      const tempFile = new File(Paths.document.uri, `SQLite/${TEMP_DB_NAME}`);
+      await tempFile.write(base64, { encoding: "base64" });
+
+      // 2. Prepare raw path for SQLite (Remove 'file://' prefix)
+      // SQLite ATTACH command requires a raw filesystem path, not a URI.
+      const rawTempPath = tempFile.uri.replace("file://", "");
+
+      // 3. Use SQLite ATTACH to merge data
+      try {
+        this.db.execSync(`ATTACH DATABASE '${rawTempPath}' AS backup_db;`);
+        
+        this.db.execSync("BEGIN TRANSACTION;");
+
+        // Merge Categories (De-dupe by ID)
+        this.db.execSync(`
+          INSERT OR IGNORE INTO main.categories 
+          SELECT * FROM backup_db.categories;
+        `);
+
+        // Merge Transactions (De-dupe by ID)
+        this.db.execSync(`
+          INSERT OR IGNORE INTO main.transactions 
+          SELECT * FROM backup_db.transactions;
+        `);
+
+        // Merge Recurring Transactions (De-dupe by ID)
+        this.db.execSync(`
+          INSERT OR IGNORE INTO main.recurring_transactions 
+          SELECT * FROM backup_db.recurring_transactions;
+        `);
+
+        this.db.execSync("COMMIT;");
+      } catch (transactionError) {
+        try {
+          this.db.execSync("ROLLBACK;");
+        } catch (e) {
+          // Rollback failed (probably because transaction never started)
+        }
+        console.error("[DB] Merge Transaction Error:", transactionError);
+        throw transactionError;
+      } finally {
+        try {
+          this.db.execSync("DETACH DATABASE backup_db;");
+        } catch (detachError) {
+          // Silently handle if it wasn't attached
+        }
+        if (tempFile.exists) tempFile.delete();
       }
 
-      // 2. Persistent Public Backup (Survives Uninstall)
+      return true;
+    } catch (e) {
+      console.error("[DB] Merge process failed:", e);
+      return false;
+    }
+  }
+
+  public async checkAndRestore(backupFolderUri: string | null): Promise<boolean> {
+    if (!backupFolderUri) return false;
+    try {
+      const row = this.db.getFirstSync<{ count: number }>("SELECT COUNT(*) as count FROM transactions;");
+      // If the app is practically empty, try to merge from backup
+      if (row && row.count < 5) {
+        return await this.mergeFromPublicFolder(backupFolderUri);
+      }
+    } catch (e) {
+      console.error("[DB] Auto-merge check failed:", e);
+    }
+    return false;
+  }
+
+  public async backupDatabase(publicFolderUri?: string | null): Promise<boolean> {
+    try {
+      const dbFile = this.getDbFile();
+      if (!dbFile.exists) return false;
+
       if (publicFolderUri) {
         try {
           const base64 = await dbFile.base64();
           const fileName = "xpens_backup.db";
-          
-          // Check if file already exists in that folder to overwrite it
           const files = await StorageAccessFramework.readDirectoryAsync(publicFolderUri);
-          const existingFile = files.find((f: string) => f.endsWith(fileName));
-          
+          const existingFile = files.find((f: string) => f.includes(fileName));
+
           let targetUri = existingFile;
           if (!targetUri) {
             targetUri = await StorageAccessFramework.createFileAsync(
               publicFolderUri,
               fileName,
-              "application/octet-stream"
+              "application/octet-stream",
             );
           }
-          
+
           await StorageAccessFramework.writeAsStringAsync(targetUri, base64, {
             encoding: "base64",
           });
-          console.log("[DB] Persistent backup updated at:", targetUri);
+          return true;
         } catch (safError) {
-          console.warn("[DB] Public SAF backup failed:", safError);
+          console.error("[DB] SAF Sync failed:", safError);
+          return false;
         }
       }
+      return true;
     } catch (e) {
-      console.warn("[DB] Backup failed:", e);
-    }
-  }
-
-  private addColumnIfMissing(table: string, column: string, definition: string) {
-    try {
-      const cols = this.db.getAllSync<{ name: string }>(
-        `PRAGMA table_info(${table});`,
-      );
-      if (cols.some((c) => c.name === column)) return;
-      this.db.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
-    } catch (e) {
-      console.warn(`[DB] addColumnIfMissing failed for ${table}.${column}:`, e);
+      console.error("[DB] Backup failed:", e);
+      return false;
     }
   }
 
@@ -122,10 +187,6 @@ class DatabaseService {
       );
     `);
 
-    // Migration: add status + settledAt columns to existing installs
-    this.addColumnIfMissing("transactions", "status", "TEXT NOT NULL DEFAULT 'final'");
-    this.addColumnIfMissing("transactions", "settledAt", "INTEGER");
-
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS recurring_transactions (
         id TEXT PRIMARY KEY NOT NULL,
@@ -146,52 +207,24 @@ class DatabaseService {
       );
     `);
 
-    // Performance Indices
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
       CREATE INDEX IF NOT EXISTS idx_transactions_categoryId ON transactions(categoryId);
-      CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
       CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
-      CREATE INDEX IF NOT EXISTS idx_recurring_isActive ON recurring_transactions(isActive);
     `);
 
-    // Seed default categories if empty
     const row = this.db.getFirstSync<{ count: number }>(
       "SELECT COUNT(*) as count FROM categories;",
     );
     if (row && row.count === 0) {
-      const defaultCategories = [
-        { id: generateId(), name: "Food", icon: "pizza", type: "expense" },
-        { id: generateId(), name: "Travel", icon: "car", type: "expense" },
-        {
-          id: generateId(),
-          name: "Shopping",
-          icon: "shopping-bag",
-          type: "expense",
-        },
-        { id: generateId(), name: "Bills", icon: "receipt", type: "expense" },
-        { id: generateId(), name: "Health", icon: "activity", type: "expense" },
-        { id: generateId(), name: "Salary", icon: "banknote", type: "income" },
-        { id: generateId(), name: "Misc", icon: "package", type: "expense" },
-      ];
-
       const statement = this.db.prepareSync(
         "INSERT INTO categories (id, name, icon, type, createdAt) VALUES (?, ?, ?, ?, ?)",
       );
       for (const cat of defaultCategories) {
-        statement.executeSync([
-          cat.id,
-          cat.name,
-          cat.icon,
-          cat.type,
-          Date.now(),
-        ]);
+        statement.executeSync([cat.id, cat.name, cat.icon, cat.type, cat.createdAt]);
       }
       statement.finalizeSync();
     }
-    
-    // Trigger an initial backup
-    this.backupDatabase();
   }
 }
 

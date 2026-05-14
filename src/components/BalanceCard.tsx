@@ -6,7 +6,9 @@ import { COLORS } from "../theme/colors";
 import { Transaction } from "../types";
 
 interface BalanceCardProps {
-  transactions: Transaction[];
+  totalIncome: number;
+  totalExpense: number;
+  todayBalance?: number;
 }
 
 /**
@@ -15,25 +17,10 @@ interface BalanceCardProps {
  */
 
 export const BalanceCard = React.memo(function BalanceCard({
-  transactions,
+  totalIncome,
+  totalExpense,
+  todayBalance = 0,
 }: BalanceCardProps) {
-  let totalIncome = 0;
-  let totalExpense = 0;
-  let todayBalance = 0;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  transactions.forEach((tx) => {
-    if (tx.type === "income") {
-      totalIncome += tx.amount;
-      if (tx.date >= today.getTime()) todayBalance += tx.amount;
-    } else {
-      totalExpense += tx.amount;
-      if (tx.date >= today.getTime()) todayBalance -= tx.amount;
-    }
-  });
-
   const balance = totalIncome - totalExpense;
 
   const router = useRouter();

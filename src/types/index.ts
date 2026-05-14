@@ -46,9 +46,12 @@ export interface Transaction {
 
 export type RecurrenceInterval = "daily" | "weekly" | "monthly";
 
-export interface RecurringTransaction extends Omit<Transaction, "date"> {
+export interface RecurringTransaction extends Omit<Transaction, "id" | "date" | "createdAt" | "updatedAt" | "status" | "settledAt"> {
+  id: string;
   interval: RecurrenceInterval;
   startDate: number;
   lastGeneratedDate: number | null;
   isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
 }

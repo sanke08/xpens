@@ -18,150 +18,44 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { Category } from "@/src/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AutoSafeBanner } from "../../../components/AutoSafeBanner";
 import { BalanceCard } from "../../../components/BalanceCard";
 import { CategorySummaryRow } from "../../../components/CategorySummaryRow";
 import { useCaptureStore } from "../../../store/captureStore";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
-import { Category } from "../../../types";
-import { BackupSetupBanner } from "../../../components/BackupSetupBanner";
 
-/**
- * DashboardScreen - The main overview page.
- * Displays total balance, quick action to add transaction, and breakdown by categories.
- */
 export default function DashboardScreen() {
   const router = useRouter();
   const categories = useStore((state) => state.categories);
-  const transactions = useStore((state) => state.transactions);
-  const addTransactions = useStore((state) => state.addTransactions);
-  const addRecurringTransaction = useStore(
-    (state) => state.addRecurringTransaction,
-  );
-  const clearAllTransactions = useStore((state) => state.clearAllTransactions);
+  const categoryMetrics = useStore((state) => state.categoryMetrics);
+  const financialSummary = useStore((state) => state.financialSummary);
 
   const pendingCaptures = useCaptureStore((s) => s.pending);
   const { bottom } = useSafeAreaInsets();
-  const [animationKey, setAnimationKey] = React.useState(0);
 
-  const pendingSummary = useMemo(() => {
-    let receive = 0;
-    let pay = 0;
-    let count = 0;
-    for (const tx of transactions) {
-      if (tx.status === "pending-receive") {
-        receive += tx.amount;
-        count++;
-      } else if (tx.status === "pending-pay") {
-        pay += tx.amount;
-        count++;
-      }
-    }
-    return { receive, pay, count };
-  }, [transactions]);
+  const pendingSummary = useMemo(
+    () => ({
+      receive: financialSummary.pendingReceive,
+      pay: financialSummary.pendingPay,
+      count: financialSummary.pendingCount,
+    }),
+    [financialSummary],
+  );
 
-  const handleReplayAnimation = useCallback(() => {
-    setAnimationKey((prev) => prev + 1);
-  }, []);
-
-  const handleAddDummyData = useCallback(() => {
-    const types: ("expense" | "income")[] = [
-      "expense",
-      "expense",
-      "expense",
-      "income",
-    ];
-    const notes = [
-      "Lunch",
-      "Groceries",
-      "Uber",
-      "Salary",
-      "Coffee",
-      "Netflix",
-      "Internet",
-      "Dinner",
-    ];
-
-    const dummyTxs: any[] = [];
-    for (let i = 0; i < 30; i++) {
-      const type = types[Math.floor(Math.random() * types.length)];
-      const filteredCats = categories.filter((c) => c.type === type);
-      const category =
-        filteredCats[Math.floor(Math.random() * filteredCats.length)] ||
-        categories[0];
-
-      dummyTxs.push({
-        amount: Math.floor(Math.random() * 1000) + 10,
-        type,
-        categoryId: category.id,
-        categoryName: category.name,
-        title: null,
-        note: notes[Math.floor(Math.random() * notes.length)],
-        location: null,
-        withPerson: null,
-        date: Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
-      });
-    }
-    addTransactions(dummyTxs);
-
-    // Add 3-4 recurring transactions
-    const recurringItems = [
-      { title: "Monthly Rent", amount: 15000, interval: "monthly" },
-      { title: "Netflix Subscription", amount: 499, interval: "monthly" },
-      { title: "Weekly Groceries", amount: 2000, interval: "weekly" },
-      { title: "Gym Membership", amount: 1200, interval: "monthly" },
-    ];
-
-    recurringItems.forEach((item) => {
-      const type = "expense";
-      const filteredCats = categories.filter((c) => c.type === type);
-      const category =
-        filteredCats[Math.floor(Math.random() * filteredCats.length)] ||
-        categories[0];
-
-      addRecurringTransaction({
-        amount: item.amount,
-        type: "expense",
-        categoryId: category.id,
-        categoryName: category.name,
-        title: item.title,
-        note: `Dummy recurring for ${item.title}`,
-        location: null,
-        withPerson: null,
-        interval: item.interval as any,
-        startDate: Date.now(),
-        status: "final",
-        settledAt: null,
-      });
-    });
-  }, [categories, addTransactions, addRecurringTransaction]);
-
-  // Compute category-wise totals and metadata for the summary list
   const categorySummaries = useMemo(() => {
-    const summary: Record<
-      string,
-      { category: Category; totalAmount: number; count: number; latest: number }
-    > = {};
-
-    categories.forEach((c) => {
-      summary[c.id] = { category: c, totalAmount: 0, count: 0, latest: 0 };
-    });
-
-    transactions.forEach((tx) => {
-      if (tx.categoryId && summary[tx.categoryId]) {
-        summary[tx.categoryId].totalAmount += tx.amount;
-        summary[tx.categoryId].count += 1;
-        if (tx.date > summary[tx.categoryId].latest) {
-          summary[tx.categoryId].latest = tx.date;
-        }
-      }
-    });
-
-    return Object.values(summary)
-      .filter((s) => s.count > 0)
+    return categoryMetrics
+      .map((m) => ({
+        category: categories.find((c) => c.id === m.categoryId)!,
+        totalAmount: m.totalAmount,
+        count: m.count,
+        latest: m.latest,
+      }))
+      .filter((item) => item.category)
       .sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [categories, transactions]);
+  }, [categories, categoryMetrics]);
 
   const renderItem = useCallback(
     ({
@@ -191,8 +85,12 @@ export default function DashboardScreen() {
   const ListHeader = useMemo(
     () => (
       <View style={{ gap: 24 }}>
-        <BackupSetupBanner />
-        <BalanceCard transactions={transactions} />
+        <AutoSafeBanner />
+        <BalanceCard
+          totalIncome={financialSummary.income}
+          totalExpense={financialSummary.expense}
+          todayBalance={financialSummary.today}
+        />
 
         {pendingSummary.count > 0 && (
           <TouchableOpacity
@@ -234,55 +132,20 @@ export default function DashboardScreen() {
         </View>
       </View>
     ),
-    [transactions, router, pendingSummary],
-  );
-
-  const ListFooter = useMemo(
-    () => (
-      <View style={styles.debugButtons}>
-        <TouchableOpacity
-          onPress={handleAddDummyData}
-          style={[styles.debugBtn, { backgroundColor: COLORS.successBg }]}
-        >
-          <Text style={[styles.debugBtnText, { color: COLORS.success }]}>
-            +30 Data
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleReplayAnimation}
-          style={[styles.debugBtn, { backgroundColor: COLORS.active }]}
-        >
-          <Text style={[styles.debugBtnText, { color: COLORS.text }]}>
-            Replay
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={clearAllTransactions}
-          style={[styles.debugBtn, { backgroundColor: COLORS.dangerBg }]}
-        >
-          <Text style={[styles.debugBtnText, { color: COLORS.danger }]}>
-            Clear All
-          </Text>
-        </TouchableOpacity>
-      </View>
-    ),
-    [handleAddDummyData, clearAllTransactions, handleReplayAnimation],
+    [financialSummary, pendingSummary, router],
   );
 
   return (
-    <View style={{ flex: 1 }} key={animationKey}>
-      {/* {ListFooter} */}
+    <View style={{ flex: 1 }}>
       <FlatList
-        key={`list-${animationKey}`}
         data={categorySummaries}
         keyExtractor={(item) => item.category.id}
         renderItem={renderItem}
         ListHeaderComponent={ListHeader}
-        // ListFooterComponent={ListFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No recent transactions found</Text>
-            <Text style={styles.emptySub}>Start logging to see insights</Text>
+            <Text style={styles.emptyText}>No data available</Text>
+            <Text style={styles.emptySub}>Start logging your first record</Text>
           </View>
         }
         contentContainerStyle={styles.scrollContent}
@@ -294,7 +157,6 @@ export default function DashboardScreen() {
       />
 
       <Animated.View
-        key={`bar-${animationKey}`}
         entering={FadeInDown.delay(500).springify()}
         style={[styles.bottomBar, { bottom: bottom + 20 }]}
       >
@@ -313,6 +175,7 @@ export default function DashboardScreen() {
           <Plus size={20} color={COLORS.background} />
           <Text style={styles.mainAddText}>Add</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => router.push("/inbox" as any)}
           style={styles.iconActionBtn}
@@ -342,18 +205,6 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: COLORS.text,
-    letterSpacing: -0.5,
-  },
   scrollContent: {
     paddingBottom: 120,
     gap: 16,
@@ -392,6 +243,26 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.background,
   },
+  viewAllBtn: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.muted,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: "center",
+    marginTop: 80,
+  },
+  emptyText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  emptySub: {
+    color: COLORS.muted,
+    fontSize: 14,
+    marginTop: 4,
+  },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -429,28 +300,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  debugTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.muted,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  debugButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  debugBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  debugBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -460,23 +309,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: COLORS.text,
-  },
-  viewAllBtn: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.lightGray,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    color: COLORS.gray,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  emptySub: {
-    color: COLORS.muted,
-    fontSize: 14,
   },
 });

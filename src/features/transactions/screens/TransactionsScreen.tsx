@@ -1,22 +1,14 @@
-import {
-  format,
-  isToday,
-  isYesterday,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import { useRouter } from "expo-router";
 import {
   Search as SearchIcon,
   SlidersHorizontal,
   X,
 } from "lucide-react-native";
-import React, { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -38,42 +30,29 @@ import { COLORS } from "../../../theme/colors";
 import { Category, Transaction } from "../../../types";
 import { FilterModal, FilterState } from "../components/FilterModal";
 
-// Fixed heights for getItemLayout
-const ITEM_HEIGHT = 78; // 68 height + 10 margin
+const ITEM_HEIGHT = 78;
 const HEADER_HEIGHT = 48;
-interface TransactionItemProps {
-  transaction: Transaction;
-  category: Category | undefined;
-  onDelete: (id: string) => void;
-  onPress: (id: string) => void;
-  renderData: FlatListItem extends { type: "transaction"; renderData: infer R }
-    ? R
-    : any;
-}
 
 const TransactionItem = memo(function TransactionItem({
-  transaction,
-  category,
+  id,
   onDelete,
   onPress,
   renderData,
-}: TransactionItemProps) {
+}: {
+  id: string;
+  onDelete: (id: string) => void;
+  onPress: (id: string) => void;
+  renderData: any;
+}) {
   const height = useSharedValue(ITEM_HEIGHT);
   const opacity = useSharedValue(1);
 
   const handleDelete = useCallback(() => {
     height.value = withTiming(0, { duration: 300 });
     opacity.value = withTiming(0, { duration: 250 }, (finished) => {
-      if (finished) {
-        scheduleOnRN(onDelete, transaction.id);
-      }
+      if (finished) scheduleOnRN(onDelete, id);
     });
-  }, [onDelete, transaction.id, height, opacity]);
-
-  const handlePress = useCallback(
-    () => onPress(transaction.id),
-    [onPress, transaction.id],
-  );
+  }, [onDelete, id, height, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     height: height.value,
@@ -85,9 +64,7 @@ const TransactionItem = memo(function TransactionItem({
     <Animated.View style={animatedStyle}>
       <SwipeableRow onDelete={handleDelete}>
         <TransactionRow
-          transaction={transaction}
-          category={category}
-          onPress={handlePress}
+          onPress={() => onPress(id)}
           renderData={renderData}
         />
       </SwipeableRow>
@@ -101,17 +78,7 @@ type FlatListItem =
       type: "transaction";
       transaction: Transaction;
       id: string;
-      renderData: {
-        primaryText: string;
-        secondaryText: string;
-        displayAmount: string;
-        displayTime: string;
-        isIncome: boolean;
-        icon?: string;
-        amountColor: string;
-        iconBg: string;
-        iconColor: string;
-      };
+      renderData: any;
     };
 
 const INITIAL_FILTERS: FilterState = {
@@ -123,262 +90,143 @@ const INITIAL_FILTERS: FilterState = {
 
 export default function TransactionsScreen() {
   const router = useRouter();
-  const transactions = useStore((state) => state.transactions);
   const categories = useStore((state) => state.categories);
   const deleteTransaction = useStore((state) => state.deleteTransaction);
+  const queryTransactions = useStore((state) => state.queryTransactions);
+  const lastSyncTime = useStore((state) => state.financialSummary.today); // Trigger for data changes
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [deferredSearch, setDeferredSearch] = useState("");
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
+  const [displayedData, setDisplayedData] = useState<FlatListItem[]>([]);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const PAGE_SIZE = 50;
 
-  // Debounce search query to reduce JS thread pressure
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDeferredSearch(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Reset pagination on filter or search change
-  React.useEffect(() => {
-    setPage(1);
-  }, [deferredSearch, filters]);
-
-  // Optimized O(1) category lookup map
+  // Optimized O(1) category map
   const categoryMap = useMemo(() => {
     const map = new Map<string, Category>();
     categories.forEach((c) => map.set(c.id, c));
     return map;
   }, [categories]);
 
-  // Stage 1: Filter and Sort
-  // We avoid creating Date objects inside the filter loop for performance
-  const sortedTransactions = useMemo(() => {
-    const q = deferredSearch.toLowerCase().trim();
-    const nowTimestamp = Date.now();
-    const todayStart = startOfDay(nowTimestamp).getTime();
-    const weekStart = startOfWeek(nowTimestamp, { weekStartsOn: 1 }).getTime();
-    const monthStart = startOfMonth(nowTimestamp).getTime();
+  // Tracks the last date header shown to prevent duplicates during pagination
+  const lastHeaderDateRef = useRef<string>("");
 
-    let results = transactions.filter((t) => {
-      // 1. Search (Most common filter first)
-      if (q && !t.searchText?.includes(q)) return false;
-
-      // 2. Status
-      if (filters.status !== "all" && t.status !== filters.status) return false;
-
-      // 3. Date Range (Compare timestamps directly, no new Date() objects)
-      if (filters.dateRange !== "all") {
-        const tTime = t.date;
-        if (filters.dateRange === "today") {
-          // Check if timestamp is within today's range
-          if (tTime < todayStart || tTime >= todayStart + 86400000)
-            return false;
-        } else if (filters.dateRange === "week") {
-          if (tTime < weekStart) return false;
-        } else if (filters.dateRange === "month") {
-          if (tTime < monthStart) return false;
-        }
+  // Main Data Loading Logic
+  const loadTransactions = useCallback(
+    async (pageNum: number, isMore: boolean) => {
+      if (isMore) setIsLoadingMore(true);
+      else {
+        setIsLoading(true);
+        lastHeaderDateRef.current = ""; // Reset headers for fresh loads
       }
 
-      // 4. Category
-      if (
-        filters.categoryIds.length > 0 &&
-        (!t.categoryId || !filters.categoryIds.includes(t.categoryId))
-      ) {
-        return false;
-      }
+      const result = await queryTransactions({
+        page: pageNum,
+        query: searchQuery,
+        status: filters.status,
+        categoryIds: filters.categoryIds,
+        dateRange: filters.dateRange,
+        sortBy: filters.sortBy,
+      });
 
-      return true;
-    });
+      // Map raw transactions to UI-ready FlatList items
+      const newItems: FlatListItem[] = [];
+      result.data.forEach((t) => {
+        // Handle Date Headers (only if sorting by date)
+        if (filters.sortBy.startsWith("date")) {
+          const d = new Date(t.date);
+          d.setHours(0, 0, 0, 0);
+          const dayKey = d.getTime().toString();
 
-    return results.sort((a, b) => {
-      switch (filters.sortBy) {
-        case "date-asc":
-          return a.date - b.date;
-        case "amount-desc":
-          return b.amount - a.amount;
-        case "amount-asc":
-          return a.amount - b.amount;
-        default:
-          return b.date - a.date;
-      }
-    });
-  }, [transactions, deferredSearch, filters]);
-
-  // Persistent Cache for UI-Ready Render Data AND the FlatList Objects themselves
-  // This ensures that object references stay stable, preventing FlatList re-renders
-  const renderDataCache = useRef<Map<string, { updatedAt: number; data: any }>>(
-    new Map(),
-  );
-  const listItemCache = useRef<Map<string, FlatListItem>>(new Map());
-
-  // Stage 2: Paginate and Build List Items
-  const { filteredData, hasMore, activeFilterCount, offsets } = useMemo(() => {
-    const flatList: FlatListItem[] = [];
-    const itemOffsets: number[] = [];
-    let currentOffset = 0;
-    let lastDayKey = "";
-    const limit = page * PAGE_SIZE;
-    const hasMoreItems = sortedTransactions.length > limit;
-    const pagedResults = sortedTransactions.slice(0, limit);
-
-    for (const t of pagedResults) {
-      // 1. Handle Headers
-      if (filters.sortBy.startsWith("date")) {
-        // Use a simple timestamp math instead of new Date() where possible
-        // but for format() we need a date, so we do it once per header
-        const d = new Date(t.date);
-        d.setHours(0, 0, 0, 0);
-        const dayKey = d.getTime().toString();
-
-        if (dayKey !== lastDayKey) {
-          lastDayKey = dayKey;
-          const headerId = `header-${dayKey}`;
-          let headerItem = listItemCache.current.get(headerId);
-
-          if (!headerItem) {
+          if (dayKey !== lastHeaderDateRef.current) {
+            lastHeaderDateRef.current = dayKey;
             const timestamp = Number(dayKey);
             let title = format(timestamp, "MMM dd, yyyy");
             if (isToday(timestamp)) title = "Today";
             else if (isYesterday(timestamp)) title = "Yesterday";
-            headerItem = { type: "header", title, id: headerId };
-            listItemCache.current.set(headerId, headerItem);
+            newItems.push({ type: "header", title, id: `header-${dayKey}` });
           }
-
-          flatList.push(headerItem);
-          itemOffsets.push(currentOffset);
-          currentOffset += HEADER_HEIGHT;
         }
-      }
 
-      // 2. Handle Transactions (Check Render Data Cache)
-      const cachedRender = renderDataCache.current.get(t.id);
-      let uiData;
-
-      if (cachedRender && cachedRender.updatedAt === t.updatedAt) {
-        uiData = cachedRender.data;
-      } else {
         const category = t.categoryId
           ? categoryMap.get(t.categoryId)
           : undefined;
         const isIncome = t.type === "income";
-        const primaryText = t.categoryName || "Uncategorized";
-        let secondaryText = "";
-        if (t.title && t.note) secondaryText = `${t.title} • ${t.note}`;
-        else if (t.title) secondaryText = t.title;
-        else if (t.note) secondaryText = `• ${t.note}`;
 
-        uiData = {
-          primaryText,
-          secondaryText,
-          displayAmount: `${isIncome ? "+" : "-"}₹${t.amount.toLocaleString("en-IN")}`,
-          displayTime: format(t.date, "HH:mm"),
-          isIncome,
-          icon: category?.icon,
-          amountColor: isIncome ? COLORS.success : COLORS.text,
-          iconBg: isIncome ? COLORS.successBg : COLORS.active,
-          iconColor: isIncome ? COLORS.success : COLORS.text,
-        };
-        renderDataCache.current.set(t.id, {
-          updatedAt: t.updatedAt,
-          data: uiData,
-        });
-      }
-
-      // 3. Ensure Stable List Item Reference
-      let transactionItem = listItemCache.current.get(t.id);
-      if (
-        !transactionItem ||
-        transactionItem.type !== "transaction" ||
-        transactionItem.transaction.updatedAt !== t.updatedAt
-      ) {
-        transactionItem = {
+        // Pre-calculate all visual properties here (Zero calculation in renderItem)
+        newItems.push({
           type: "transaction",
           transaction: t,
           id: t.id,
-          renderData: uiData,
-        };
-        listItemCache.current.set(t.id, transactionItem);
-      }
+          renderData: {
+            primaryText: t.categoryName || "Uncategorized",
+            secondaryText: t.title || t.note || "",
+            displayAmount: `${isIncome ? "+" : "-"}₹${t.amount.toLocaleString("en-IN")}`,
+            displayTime: format(t.date, "HH:mm"),
+            isIncome,
+            icon: category?.icon,
+            amountColor: isIncome ? COLORS.success : COLORS.text,
+            iconBg: isIncome ? COLORS.successBg : COLORS.active,
+            iconColor: isIncome ? COLORS.success : COLORS.text,
+          },
+        });
+      });
 
-      flatList.push(transactionItem);
-      itemOffsets.push(currentOffset);
-      currentOffset += ITEM_HEIGHT;
+      setDisplayedData((prev) => (isMore ? [...prev, ...newItems] : newItems));
+      setHasMore(result.hasMore);
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    },
+    [searchQuery, filters, queryTransactions, categoryMap],
+  );
+
+  // Initial load or Filter change
+  useEffect(() => {
+    setPage(1);
+    loadTransactions(1, false);
+  }, [searchQuery, filters, lastSyncTime, loadTransactions]);
+
+  const handleEndReached = () => {
+    if (hasMore && !isLoadingMore && !isLoading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadTransactions(nextPage, true);
     }
+  };
 
+  const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.status !== "all") count++;
     if (filters.categoryIds.length > 0) count++;
     if (filters.dateRange !== "all") count++;
     if (filters.sortBy !== "date-desc") count++;
-
-    return {
-      filteredData: flatList,
-      hasMore: hasMoreItems,
-      activeFilterCount: count,
-      offsets: itemOffsets,
-    };
-  }, [
-    page,
-    sortedTransactions,
-    filters.status,
-    filters.categoryIds.length,
-    filters.dateRange,
-    filters.sortBy,
-    categoryMap,
-  ]);
-
-  const handleDelete = useCallback(
-    (id: string) => deleteTransaction(id),
-    [deleteTransaction],
-  );
-  const handlePress = useCallback(
-    (id: string) => router.push(`/transaction?id=${id}` as any),
-    [router],
-  );
-
-  // Optimized O(1) layout calculation
-  const getItemLayout = useCallback(
-    (data: any, index: number) => {
-      const height =
-        data[index]?.type === "header" ? HEADER_HEIGHT : ITEM_HEIGHT;
-      const offset = offsets[index] || 0;
-      return { length: height, offset, index };
-    },
-    [offsets],
-  );
+    return count;
+  }, [filters]);
 
   const renderItem = useCallback(
     ({ item }: { item: FlatListItem }) => {
       if (item.type === "header") {
         return (
-          <View style={[styles.sectionHeader, { height: HEADER_HEIGHT }]}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{item.title}</Text>
           </View>
         );
       }
-      const { transaction } = item;
-      const category = transaction.categoryId
-        ? categoryMap.get(transaction.categoryId)
-        : undefined;
       return (
         <TransactionItem
-          transaction={item.transaction}
-          category={category}
-          onDelete={handleDelete}
-          onPress={handlePress}
+          id={item.id}
+          onDelete={deleteTransaction}
+          onPress={(id) => router.push(`/transaction?id=${id}` as any)}
           renderData={item.renderData}
         />
       );
     },
-    [categoryMap, handleDelete, handlePress],
+    [deleteTransaction, router],
   );
-
-  const clearSearch = () => setSearchQuery("");
 
   return (
     <KeyboardAwareView style={{ flex: 1 }}>
@@ -388,14 +236,17 @@ export default function TransactionsScreen() {
             <SearchIcon size={18} color={COLORS.muted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search descriptions, notes..."
+              placeholder="Search..."
               placeholderTextColor={COLORS.placeholder}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCorrect={false}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearBtn}>
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                style={styles.clearBtn}
+              >
                 <X size={16} color={COLORS.muted} />
               </TouchableOpacity>
             )}
@@ -420,50 +271,33 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={filteredData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        getItemLayout={getItemLayout}
-        initialNumToRender={20}
-        maxToRenderPerBatch={20}
-        windowSize={15}
-        decelerationRate={0.93}
-        removeClippedSubviews={Platform.OS === "android"}
-        showsVerticalScrollIndicator={false}
-        onEndReached={() => {
-          if (hasMore && !isLoadingMore) {
-            setIsLoadingMore(true);
-            setPage((p) => p + 1);
-            setTimeout(() => setIsLoadingMore(false), 100);
+      {isLoading && page === 1 ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={displayedData}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <ActivityIndicator
+                style={{ margin: 20 }}
+                color={COLORS.primary}
+              />
+            ) : null
           }
-        }}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          <View style={styles.footerContainer}>
-            {isLoadingMore ? (
-              <ActivityIndicator size="small" color={COLORS.muted} />
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No matching transactions</Text>
-            {(searchQuery || activeFilterCount > 0) && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery("");
-                  setFilters(INITIAL_FILTERS);
-                }}
-                style={styles.resetEmptyBtn}
-              >
-                <Text style={styles.resetEmptyText}>Clear all filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-      />
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No transactions found</Text>
+            </View>
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
 
       <FilterModal
         visible={isFilterModalVisible}
@@ -477,14 +311,8 @@ export default function TransactionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingBottom: 16,
-  },
-  searchBarContainer: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-  },
+  header: { paddingBottom: 16 },
+  searchBarContainer: { flexDirection: "row", gap: 10, alignItems: "center" },
   searchBar: {
     flex: 1,
     flexDirection: "row",
@@ -492,19 +320,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 10 : 6,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 15,
-    color: COLORS.text,
-  },
-  clearBtn: {
-    padding: 4,
-  },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 15, color: COLORS.text },
+  clearBtn: { padding: 4 },
   filterToggle: {
     width: 48,
     height: 48,
@@ -524,22 +345,18 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
     backgroundColor: COLORS.danger,
-    minWidth: 18,
+    width: 18,
     height: 18,
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
     borderWidth: 2,
     borderColor: COLORS.background,
   },
-  badgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: "800",
-  },
+  badgeText: { color: COLORS.white, fontSize: 10, fontWeight: "800" },
   sectionHeader: {
     backgroundColor: COLORS.background,
+    height: HEADER_HEIGHT,
     justifyContent: "center",
     marginTop: 8,
   },
@@ -550,33 +367,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  listContent: {
-    paddingBottom: 40,
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: "center",
-    marginTop: 60,
-  },
-  emptyText: {
-    color: COLORS.muted,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  resetEmptyBtn: {
-    marginTop: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.card,
-  },
-  resetEmptyText: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  footerContainer: {
-    paddingVertical: 20,
-    alignItems: "center",
-  },
+  listContent: { paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyState: { padding: 40, alignItems: "center", marginTop: 60 },
+  emptyText: { color: COLORS.muted, fontSize: 16, fontWeight: "500" },
 });

@@ -22,12 +22,13 @@ export default function InboxScreen() {
   const accept = useCaptureStore((s) => s.accept);
   const acceptAll = useCaptureStore((s) => s.acceptAll);
   const dismiss = useCaptureStore((s) => s.dismiss);
-  const addTransaction = useStore((s) => s.addTransaction);
+  const createTransaction = useStore((s) => s.createTransaction);
+  const bulkCreateTransactions = useStore((s) => s.bulkCreateTransactions);
 
   const handleAccept = useCallback(
     (item: CapturedTransaction) => {
       accept(item.id);
-      addTransaction({
+      createTransaction({
         amount: item.amount,
         type: item.type,
         categoryId: item.categoryId,
@@ -41,13 +42,13 @@ export default function InboxScreen() {
         settledAt: item.date,
       });
     },
-    [accept, addTransaction],
+    [accept, createTransaction],
   );
 
   const handleAcceptAll = useCallback(() => {
     const items = acceptAll();
-    items.forEach((item) => {
-      addTransaction({
+    bulkCreateTransactions(
+      items.map((item) => ({
         amount: item.amount,
         type: item.type,
         categoryId: item.categoryId,
@@ -59,9 +60,9 @@ export default function InboxScreen() {
         date: item.date,
         status: "final",
         settledAt: item.date,
-      });
-    });
-  }, [acceptAll, addTransaction]);
+      })),
+    );
+  }, [acceptAll, bulkCreateTransactions]);
 
   const handleEdit = useCallback(
     (item: CapturedTransaction) => {

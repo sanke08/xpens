@@ -43,26 +43,6 @@ export const EGBlock: React.FC<EGBlockProps> = ({
       <Text style={styles.previewLabel}>List Preview</Text>
       <View pointerEvents="none">
         <TransactionRow
-          transaction={
-            {
-              id: "preview",
-              amount: amount,
-              type: type,
-              categoryId: suggestedCat?.id || "preview-cat",
-              categoryName: categoryName,
-              note: note,
-              date: Date.now(),
-            } as any
-          }
-          category={
-            suggestedCat || {
-              id: "preview-cat",
-              name: categoryName,
-              icon: categoryIcon,
-              type: type as any,
-              createdAt: Date.now(),
-            }
-          }
           renderData={{
             primaryText: categoryName,
             secondaryText: note,
@@ -95,15 +75,5 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  tipIcon: {
-    marginRight: 8,
-    marginTop: 2,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.muted,
-    lineHeight: 20,
   },
 });

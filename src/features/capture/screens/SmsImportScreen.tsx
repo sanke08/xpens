@@ -77,9 +77,10 @@ export default function SmsImportScreen() {
   const router = useRouter();
   const { bottom } = useSafeAreaInsets();
   const categories = useStore((s) => s.categories);
-  const transactions = useStore((s) => s.transactions);
-  const addTransactions = useStore((s) => s.addTransactions);
+  const bulkCreateTransactions = useStore((s) => s.bulkCreateTransactions);
+  const queryTransactions = useStore((s) => s.queryTransactions);
 
+  const [recentForDupCheck, setRecentForDupCheck] = useState<any[]>([]);
   const [permission, setPermission] = useState<PermissionStatus>("unknown");
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [progress, setProgress] = useState<ScanProgress>({
@@ -123,6 +124,10 @@ export default function SmsImportScreen() {
     setPhase("scanning");
     setProgress({ scanned: 0, found: 0, done: false });
 
+    // Fetch recent items for duplication check on-demand using queryTransactions
+    const { data: recent } = await queryTransactions({ page: 1 });
+    setRecentForDupCheck(recent);
+
     const fromDate =
       Date.now() - DATE_RANGES[rangeIndex].days * 24 * 60 * 60 * 1000;
 
@@ -133,11 +138,11 @@ export default function SmsImportScreen() {
       onCapture(raw: RawCapture) {
         const enriched = enrich(raw, {
           categories,
-          recentTransactions: transactions,
+          recentTransactions: recent,
         });
 
         // Skip duplicates against already-accepted transactions
-        if (isDuplicate(enriched, transactions, capturedRef.current)) return;
+        if (isDuplicate(enriched, recent, capturedRef.current)) return;
 
         capturedRef.current = [...capturedRef.current, enriched];
         setCaptured([...capturedRef.current]);
@@ -153,7 +158,7 @@ export default function SmsImportScreen() {
         setPhase("done");
       },
     });
-  }, [permission, rangeIndex, categories, transactions]);
+  }, [permission, rangeIndex, categories, queryTransactions]);
 
   // If SMS not available, show immediately
   const smsAvailable = SmsListener.isAvailable();
@@ -185,7 +190,7 @@ export default function SmsImportScreen() {
     const toImport = captured.filter((c) => selected.has(c.id));
     if (toImport.length === 0) return;
 
-    addTransactions(
+    bulkCreateTransactions(
       toImport.map((item) => ({
         amount: item.amount,
         type: item.type,
@@ -202,7 +207,7 @@ export default function SmsImportScreen() {
     );
 
     router.back();
-  }, [captured, selected, addTransactions, router]);
+  }, [captured, selected, bulkCreateTransactions, router]);
 
   // ── Render item ────────────────────────────────────────────────────────────
 

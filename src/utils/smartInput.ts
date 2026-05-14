@@ -49,16 +49,16 @@ export function parseSmartInput(
       }
     }
 
-    // 3. Fast Dictionary mapped by Object
+    // 3. Fast Dictionary mapped by Name
     if (!suggestedCategory) {
       const clean = normalize(note);
-      const words = clean.split(" ");
+      const words = clean.split(/\s+/);
 
       for (const word of words) {
         if (keywordMap.has(word)) {
-          const mappedCatId = keywordMap.get(word);
+          const targetName = keywordMap.get(word);
           const found = categories.find(
-            (c) => c.id === mappedCatId || c.name.toLowerCase() === mappedCatId,
+            (c) => c.name.toLowerCase() === targetName || c.id === targetName
           );
           if (found) {
             suggestedCategory = found;

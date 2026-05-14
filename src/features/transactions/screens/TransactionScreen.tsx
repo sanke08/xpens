@@ -33,6 +33,7 @@ import { COLORS } from "../../../theme/colors";
 import {
   Category,
   RecurrenceInterval,
+  Transaction,
   TransactionStatus,
 } from "../../../types";
 import { parseSmartInput } from "../../../utils/smartInput";
@@ -52,19 +53,21 @@ export default function TransactionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const addTransaction = useStore((state) => state.addTransaction);
+  const createTransaction = useStore((state) => state.createTransaction);
   const updateTransaction = useStore((state) => state.updateTransaction);
-  const addRecurringTransaction = useStore(
-    (state) => state.addRecurringTransaction,
+  const createRecurringTransaction = useStore(
+    (state) => state.createRecurringTransaction,
   );
-  const transactions = useStore((state) => state.transactions);
   const categories = useStore((state) => state.categories);
-  const addCategory = useStore((state) => state.addCategory);
+  const createCategory = useStore((state) => state.createCategory);
   const deleteTransaction = useStore((state) => state.deleteTransaction);
+  const fetchTransactionById = useStore((state) => state.fetchTransactionById);
+  const queryTransactions = useStore((state) => state.queryTransactions);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
+    [],
+  );
 
-  const existingTx =
-    typeof id === "string" ? transactions.find((t) => t.id === id) : undefined;
-
+  const [existingTx, setExistingTx] = useState<Transaction | null>(null);
   const [inputText, setInputText] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -96,50 +99,59 @@ export default function TransactionScreen() {
 
   const handleCreateCategory = () => {
     if (!newCatName.trim()) return;
-    addCategory({
+    createCategory({
       name: newCatName.trim(),
       icon: newCatIcon,
       type: newCatType,
-      createdAt: Date.now(),
-    } as any);
+    });
     setCreateCatModalVisible(false);
   };
 
   useEffect(() => {
-    if (existingTx) {
-      setInputText(
-        existingTx.amount.toString() +
-          (existingTx.note ? ` ${existingTx.note}` : ""),
-      );
-      setType(existingTx.type);
-      setNote(existingTx.note || "");
-      setTitle(existingTx.title || "");
-      setLocation(existingTx.location || "");
-      setWithPerson(existingTx.withPerson || "");
-      const cat = categories.find((c) => c.id === existingTx.categoryId);
-      if (cat) setSelectedCategory(cat);
-      if (existingTx.title || existingTx.location || existingTx.withPerson) {
-        setShowDetails(true);
-      }
-      setStatus(existingTx.status ?? "final");
+    if (id && typeof id === "string") {
+      fetchTransactionById(id).then((tx) => {
+        if (tx) {
+          setExistingTx(tx);
+          setInputText(tx.amount.toString() + (tx.note ? ` ${tx.note}` : ""));
+          setType(tx.type);
+          setNote(tx.note || "");
+          setTitle(tx.title || "");
+          setLocation(tx.location || "");
+          setWithPerson(tx.withPerson || "");
+          const cat = categories.find((c) => c.id === tx.categoryId);
+          if (cat) setSelectedCategory(cat);
+          if (tx.title || tx.location || tx.withPerson) setShowDetails(true);
+          setStatus(tx.status ?? "final");
+        }
+      });
     } else {
       const defaultExp = categories.find((c) => c.type === "expense");
       if (defaultExp) setSelectedCategory(defaultExp);
     }
 
+    // Fetch recent transactions for smart suggestions
+    queryTransactions({ page: 1, sortBy: "date-desc" }).then((res) => {
+      setRecentTransactions(res.data);
+    });
+
     setTimeout(() => {
       textInputRef.current?.focus();
     }, 100);
     setHasInit(true);
-  }, [existingTx, categories]);
+  }, [id, categories, fetchTransactionById, queryTransactions]);
 
   // Handle smart input
   useEffect(() => {
     if (!hasInit) return;
     if (existingTx && !inputText.includes(" ")) return;
 
-    const res = parseSmartInput(inputText, categories, transactions);
+    // Use a subset of recent transactions for adaptive learning
+    // This allows the app to learn from the user's past behavior (e.g., if they tag a specific store)
+    const res = parseSmartInput(inputText, categories, recentTransactions);
+
     if (res.amount !== null) {
+      // Only auto-suggest if the user hasn't manually changed the category in this session
+      // or if they are just starting a new entry.
       if (res.suggestedCategory && !showDetails) {
         setSelectedCategory(res.suggestedCategory);
       }
@@ -150,10 +162,17 @@ export default function TransactionScreen() {
         setNote(res.note || "");
       }
     }
-  }, [inputText, categories, showDetails, hasInit, existingTx, transactions]);
+  }, [
+    inputText,
+    categories,
+    showDetails,
+    hasInit,
+    existingTx,
+    recentTransactions,
+  ]);
 
   const handleSave = () => {
-    const res = parseSmartInput(inputText, categories, transactions);
+    const res = parseSmartInput(inputText, categories, []);
     let amount = res.amount || 0;
     if (amount <= 0 && existingTx) amount = existingTx.amount;
     if (amount <= 0) return;
@@ -175,7 +194,7 @@ export default function TransactionScreen() {
       // If automate is on, we create a recurring transaction.
       // If we were editing a single tx, we could either convert it or keep it separate.
       // Standard behavior: create the recurring schedule.
-      addRecurringTransaction({
+      createRecurringTransaction({
         ...payload,
         interval: interval,
         startDate: Date.now(),
@@ -187,7 +206,7 @@ export default function TransactionScreen() {
     } else if (existingTx) {
       updateTransaction(existingTx.id, payload);
     } else {
-      addTransaction({
+      createTransaction({
         ...payload,
         date: Date.now(),
       });
@@ -526,7 +545,7 @@ export default function TransactionScreen() {
           <EGBlock
             inputText={inputText}
             categories={categories}
-            transactions={transactions}
+            transactions={[]}
           />
         </ScrollView>
 

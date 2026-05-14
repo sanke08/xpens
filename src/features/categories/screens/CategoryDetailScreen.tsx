@@ -15,7 +15,7 @@ import { SwipeableRow } from "../../../components/SwipeableRow";
 import { TransactionRow } from "../../../components/TransactionRow";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
-import { Category, Transaction } from "../../../types";
+import { Transaction } from "../../../types";
 import { getIcon } from "../iconMap";
 
 type FlatListItem =
@@ -42,14 +42,12 @@ const HEADER_HEIGHT = 32;
 
 interface TransactionItemProps {
   item: Extract<FlatListItem, { type: "transaction" }>;
-  category: Category;
   onDelete: (id: string) => void;
   onPress: (id: string) => void;
 }
 
 const TransactionItem = memo(function TransactionItem({
   item,
-  category,
   onDelete,
   onPress,
 }: TransactionItemProps) {
@@ -61,13 +59,7 @@ const TransactionItem = memo(function TransactionItem({
 
   return (
     <SwipeableRow onDelete={handleDelete}>
-      <TransactionRow
-        transaction={item.transaction}
-        category={category}
-        variant="category"
-        onPress={handlePress}
-        renderData={item.renderData}
-      />
+      <TransactionRow onPress={handlePress} renderData={item.renderData} />
     </SwipeableRow>
   );
 });
@@ -75,14 +67,29 @@ const TransactionItem = memo(function TransactionItem({
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const transactions = useStore((state) => state.transactions);
   const categories = useStore((state) => state.categories);
   const deleteTransaction = useStore((state) => state.deleteTransaction);
+  const queryTransactions = useStore((state) => state.queryTransactions);
+  const financialSummary = useStore((state) => state.financialSummary);
 
   const category = useMemo(
     () => categories.find((c) => c.id === id),
     [categories, id],
   );
+
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+
+  React.useEffect(() => {
+    if (id) {
+      queryTransactions({
+        page: 1,
+        categoryIds: [id],
+        sortBy: "date-desc",
+      }).then((res) => {
+        setTransactions(res.data);
+      });
+    }
+  }, [id, financialSummary.today, queryTransactions]);
 
   // Persistent Cache for UI-Ready Render Data and List Items
   const renderDataCache = useRef<Map<string, { updatedAt: number; data: any }>>(
@@ -98,10 +105,7 @@ export default function CategoryDetailScreen() {
     let currentOffset = 0;
     let lastDayKey = "";
 
-    // True O(N) - single pass since transactions are already sorted by date DESC
     for (const t of transactions) {
-      if (t.categoryId !== id) continue;
-
       total += t.amount;
 
       // 1. Handle Headers
@@ -183,7 +187,7 @@ export default function CategoryDetailScreen() {
 
     offsetsRef.current = itemOffsets;
     return { filteredData: flatList, totalAmount: total };
-  }, [id, transactions, category]);
+  }, [transactions, category]);
 
   // Completely stable layout calculation (Zero dependencies)
   const getItemLayout = useCallback((data: any, index: number) => {
@@ -223,13 +227,12 @@ export default function CategoryDetailScreen() {
       return (
         <TransactionItem
           item={item}
-          category={category!}
           onDelete={handleDelete}
           onPress={handlePress}
         />
       );
     },
-    [category, handleDelete, handlePress],
+    [handleDelete, handlePress],
   );
 
   if (!category) {

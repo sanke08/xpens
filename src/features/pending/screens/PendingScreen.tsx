@@ -12,27 +12,36 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStore } from "../../../store/useStore";
 import { COLORS } from "../../../theme/colors";
+import { Transaction } from "../../../types";
 import { PendingItemCard } from "../components/PendingItemCard";
 
 export default function PendingScreen() {
   const router = useRouter();
   const { bottom } = useSafeAreaInsets();
-  const transactions = useStore((s) => s.transactions);
   const categories = useStore((s) => s.categories);
+  const financialSummary = useStore((s) => s.financialSummary);
   const settleTransaction = useStore((s) => s.settleTransaction);
-  const settleAllReceivable = useStore((s) => s.settleAllReceivable);
+  const settleAllPending = useStore((s) => s.settleAllPending);
+  const fetchPendingTransactions = useStore((s) => s.fetchPendingTransactions);
 
-  const { receivables, payables, totalReceive, totalPay } = useMemo(() => {
-    const receivables = transactions
-      .filter((t) => t.status === "pending-receive")
-      .sort((a, b) => b.date - a.date);
-    const payables = transactions
-      .filter((t) => t.status === "pending-pay")
-      .sort((a, b) => b.date - a.date);
-    const totalReceive = receivables.reduce((s, t) => s + t.amount, 0);
-    const totalPay = payables.reduce((s, t) => s + t.amount, 0);
-    return { receivables, payables, totalReceive, totalPay };
-  }, [transactions]);
+  const [receivables, setReceivables] = React.useState<Transaction[]>([]);
+  const [payables, setPayables] = React.useState<Transaction[]>([]);
+
+  React.useEffect(() => {
+    fetchPendingTransactions().then((res) => {
+      setReceivables(res.receivables);
+      setPayables(res.payables);
+    });
+  }, [financialSummary.pendingCount, fetchPendingTransactions]);
+
+  const totalReceive = useMemo(
+    () => receivables.reduce((s, t) => s + t.amount, 0),
+    [receivables],
+  );
+  const totalPay = useMemo(
+    () => payables.reduce((s, t) => s + t.amount, 0),
+    [payables],
+  );
 
   const handleEdit = useCallback(
     (id: string) => {
@@ -54,11 +63,11 @@ export default function PendingScreen() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Mark all received",
-          onPress: settleAllReceivable,
+          onPress: settleAllPending,
         },
       ],
     );
-  }, [receivables.length, totalReceive, settleAllReceivable]);
+  }, [receivables.length, totalReceive, settleAllPending]);
 
   const isEmpty = receivables.length === 0 && payables.length === 0;
 
